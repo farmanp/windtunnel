@@ -78,3 +78,11 @@ runs/
 # Docusaurus
 .docusaurus/
 build/
+
+# AI Agent context files
+CLAUDE.md
+.claude/
+**/CLAUDE.md
+
+# Temp test directories
+windtunnel_tests_temp/
