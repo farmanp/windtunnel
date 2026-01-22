@@ -189,10 +189,10 @@ npm run docs:build        # Build static site
 - Quick Run Launcher (UI-to-Engine orchestration)
 - Results Explorer (Filtering, Comparison, Export)
 - Python DSL Research (Design Spike)
+- Multi-protocol transport research (Design Spike)
 
 **Upcoming:**
 - Batch 6: Variation engine (FEAT-017)
-- Batch 7: Advanced Engine (Spikes)
 
 See `tickets/TICKET-GRAPH.md` for full roadmap with 32 feature tickets across 10 batches.
 

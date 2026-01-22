@@ -191,7 +191,7 @@ Execute each batch to completion before starting the next. Within a batch, all t
 | FEAT-019 | Branching flows and actor policies | FEAT-007, FEAT-006 | High | DONE |
 | SPIKE-001 | LLM-driven actor policy research | FEAT-017, FEAT-019 | Research | TODO |
 | SPIKE-002 | Python DSL for scenarios | FEAT-003 | Medium | DONE |
-| SPIKE-003 | Multi-protocol transport architecture | FEAT-007, FEAT-008 | Research | TODO |
+| SPIKE-003 | Multi-protocol transport architecture | FEAT-007, FEAT-008 | Research | DONE |
 
 **Batch Notes:** These are optional enhancements. Can be deferred or worked based on priority. SPIKE-002 added as a potential future scenario definition method.
 
