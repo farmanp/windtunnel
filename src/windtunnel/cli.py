@@ -3,7 +3,7 @@
 import typer
 
 from windtunnel import __version__
-from windtunnel.commands import replay, report, run
+from windtunnel.commands import replay, report, run, serve
 
 app = typer.Typer(
     name="windtunnel",
@@ -16,6 +16,7 @@ app = typer.Typer(
 app.command(name="run", help="Execute workflow simulations")(run)
 app.command(name="report", help="Generate HTML report from run artifacts")(report)
 app.command(name="replay", help="Replay a specific workflow instance")(replay)
+app.command(name="serve", help="Serve the Web UI dashboard")(serve)
 
 
 @app.callback(invoke_without_command=True)
