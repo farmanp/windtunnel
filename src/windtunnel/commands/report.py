@@ -5,6 +5,8 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
+from windtunnel.report import HTMLReportGenerator
+
 console = Console()
 
 
@@ -53,7 +55,13 @@ def report(
     console.print(f"  Run path: {run_path}")
     console.print(f"  Output: {output_path}")
     console.print()
-    console.print(
-        "[yellow]Report generation not yet implemented (see FEAT-009)[/yellow]"
-    )
+
+    try:
+        generator = HTMLReportGenerator(run_path)
+        result_path = generator.generate(output_path)
+        console.print(f"[green]Report generated successfully: {result_path}[/green]")
+    except Exception as e:
+        console.print(f"[red]Error generating report: {e}[/red]")
+        raise typer.Exit(code=1) from None
+
     raise typer.Exit(code=0)
