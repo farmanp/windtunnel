@@ -13,8 +13,8 @@ from turbulence.api.routes.configs import router as configs_router
 
 def create_app(
     runs_dir: Path = Path("runs"),
-    sut_dir: Path = Path("."),
-    scenarios_dir: Path = Path("scenarios"),
+    sut_dir: Path = Path("use-cases/sut"),
+    scenarios_dir: Path = Path("use-cases/scenarios"),
     static_dir: Path | None = None,
 ) -> FastAPI:
     """Create and configure the FastAPI application.

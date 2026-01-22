@@ -19,7 +19,7 @@ def serve(
         resolve_path=True,
     ),
     sut_dir: Path = typer.Option(
-        Path("."),
+        Path("use-cases/sut"),
         "--sut-dir",
         "-s",
         help="Directory containing SUT configurations",
@@ -28,7 +28,7 @@ def serve(
         resolve_path=True,
     ),
     scenarios_dir: Path = typer.Option(
-        Path("scenarios"),
+        Path("use-cases/scenarios"),
         "--scenarios-dir",
         "-c",
         help="Directory containing scenario definitions",
@@ -90,9 +90,9 @@ def serve(
     console.print()
 
     app = create_app(
-        runs_dir=runs_dir, 
-        sut_dir=sut_dir, 
-        scenarios_dir=scenarios_dir, 
-        static_dir=static_dir
+        runs_dir=runs_dir,
+        sut_dir=sut_dir,
+        scenarios_dir=scenarios_dir,
+        static_dir=static_dir,
     )
     uvicorn.run(app, host=host, port=port)
