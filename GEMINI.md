@@ -57,7 +57,7 @@ See [TICKET-GRAPH.md](tickets/TICKET-GRAPH.md) for the detailed dependency graph
 3. **Action Runners**: HTTP, Wait, and Assertions (FEAT-004, 005, 006) - **DONE**
 4. **Context Engine**: Variable management and templating (FEAT-007) - **DONE**
 5. **Persistence/Reporting**: Result storage, HTML reports, and Replay (FEAT-008, 009, 010) - **DONE**
-6. **Scale & Resilience**: Parallel execution, Turbulence, and Advanced Assertions (FEAT-011, 012, 013, 14) - **IN PROGRESS**
+6. **Scale & Resilience**: Parallel execution, Turbulence, and Advanced Assertions (FEAT-011, 012, 013, 014) - **DONE**
 
 ## 📄 License
 
