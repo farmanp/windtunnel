@@ -4,8 +4,9 @@
 
 Windtunnel is a developer-centric framework designed to stress-test, validate, and analyze complex distributed systems. It combines the ease of writing scenarios in YAML/Python with the raw power of an asynchronous execution engine to simulate thousands of concurrent users.
 
-![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![GitHub](https://img.shields.io/github/stars/farmanp/windtunnel?style=social)](https://github.com/farmanp/windtunnel)
 
 ---
 
@@ -16,7 +17,8 @@ Windtunnel is a developer-centric framework designed to stress-test, validate, a
 *   **🔍 Deep Observability:** Automatically correlates traces with `run_id`, `instance_id`, and `correlation_id`.
 *   **📊 Rich Reporting:** Generates beautiful HTML reports with pass/fail metrics, latency distributions, and error analysis.
 *   **💾 Crash-Safe Storage:** Persists every step, request, and assertion to efficient JSONL files for post-run analysis.
-*   **🌪️ Turbulence Engine:** (Coming Soon) Inject fault patterns to test system resilience.
+*   **🌪️ Turbulence Engine:** Inject fault patterns (latency, errors, timeouts) to test system resilience.
+*   **🖥️ Web Dashboard:** Real-time monitoring UI with run history, instance timelines, and deep investigation views.
 
 ---
 
@@ -39,7 +41,12 @@ pip install -e .
 Create a `sut.yaml` file to define your target environment:
 ```yaml
 name: "My E-Commerce App"
-base_url: "http://localhost:8080"
+default_headers:
+  X-Correlation-ID: "{{correlation_id}}"
+services:
+  api:
+    base_url: "http://localhost:8080"
+    timeout_seconds: 30
 ```
 
 ### 2. Write a Scenario
@@ -104,11 +111,38 @@ open runs/<run_id>/report.html
 ## 📂 Project Structure
 
 *   `src/windtunnel/`: Core framework code.
-    *   `engine/`: The async execution engine.
-    *   `actions/`: Action runners (HTTP, Wait).
+    *   `actions/`: Action runners (HTTP, Wait, Assert).
+    *   `engine/`: Async execution engine, templating, and replay.
     *   `storage/`: JSONL persistence layer.
-*   `scenarios/`: Place your YAML workflow definitions here.
+    *   `turbulence/`: Fault injection engine.
+    *   `validation/`: JSON Schema validation.
+    *   `evaluation/`: Safe expression evaluator.
+    *   `api/`: FastAPI backend for web dashboard.
+    *   `report/`: HTML report generation.
+*   `ui/`: React web dashboard (Vite + Tailwind).
+*   `docs/`: Docusaurus documentation site.
 *   `runs/`: Output directory for test artifacts and reports.
+*   `tickets/`: Development roadmap and ticket tracking.
+
+---
+
+## 🖥️ Web Dashboard
+
+Start the web UI for real-time monitoring:
+
+```bash
+# Start the API server
+windtunnel serve --port 8000
+
+# In another terminal, start the UI dev server
+cd ui && npm run dev
+```
+
+The dashboard provides:
+- **Run History:** Overview of all test runs with pass/fail metrics
+- **Run Detail:** Deep dive into individual runs with error analysis
+- **Instance Timeline:** Step-by-step trace of workflow execution
+- **Real-time Updates:** WebSocket streaming for live run monitoring
 
 ---
 
@@ -116,7 +150,11 @@ open runs/<run_id>/report.html
 
 We welcome contributions! Please check `tickets/TICKET-GRAPH.md` to see the roadmap and currently active tasks.
 
-1.  Clone the repository.
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/farmanp/windtunnel.git
+    cd windtunnel
+    ```
 2.  Install dev dependencies: `pip install -e ".[dev]"`
 3.  Run tests: `pytest`
 4.  Submit a Pull Request.
