@@ -1,0 +1,18 @@
+# httpbin.org SUT Configuration
+#
+# httpbin.org is a simple HTTP request/response service useful for testing.
+# It echoes back requests, allowing us to validate Turbulence's
+# extraction and chaining capabilities without a real backend.
+
+name: httpbin.org
+
+default_headers:
+  Accept: application/json
+  User-Agent: "Turbulence/1.0"
+  X-Correlation-ID: "{{correlation_id}}"
+  X-Instance-ID: "{{instance_id}}"
+
+services:
+  httpbin:
+    base_url: "https://httpbin.org"
+    timeout_seconds: 30

@@ -1,0 +1,23 @@
+# Mock E-commerce API Configuration
+#
+# This SUT config is designed for a realistic e-commerce API.
+# Replace base_url with your actual API endpoint.
+
+name: Mock E-commerce API
+
+default_headers:
+  Accept: application/json
+  X-Correlation-ID: "{{correlation_id}}"
+  X-Request-ID: "{{instance_id}}"
+  # Add auth header if using authenticated flow
+  # Authorization: "Bearer {{auth_token}}"
+
+services:
+  api:
+    base_url: "http://localhost:8080"
+    timeout_seconds: 30
+
+  # If payment is a separate service
+  payments:
+    base_url: "http://localhost:8081"
+    timeout_seconds: 60

@@ -1,0 +1,197 @@
+# E-commerce Checkout Flow - httpbin.org Variant
+#
+# This scenario simulates the checkout flow against httpbin.org
+# to validate Turbulence's extraction and chaining capabilities.
+#
+# httpbin echoes back what we send, so we simulate the data flow
+# by extracting from our own request bodies (echoed in response).
+
+id: ecommerce-checkout-httpbin
+description: Checkout flow simulation using httpbin.org echo endpoints
+
+flow:
+  # Step 1: Browse products (simulated)
+  - type: http
+    name: browse_products
+    service: httpbin
+    method: GET
+    path: /anything/products
+    query:
+      category: electronics
+      limit: "10"
+    extract:
+      request_category: "$.args.category"
+
+  - type: assert
+    name: verify_browse_success
+    expect:
+      status_code: 200
+
+  # Step 2: Get product details (simulated)
+  - type: http
+    name: get_product_details
+    service: httpbin
+    method: GET
+    path: /anything/products/prod_12345
+    headers:
+      X-Simulated-Product: "prod_12345"
+    extract:
+      product_id: "$.headers.X-Simulated-Product"
+
+  - type: assert
+    name: verify_product_details
+    expect:
+      status_code: 200
+
+  # Step 3: Add to cart
+  - type: http
+    name: add_to_cart
+    service: httpbin
+    method: POST
+    path: /anything/cart/items
+    headers:
+      Content-Type: application/json
+    body:
+      product_id: "{{product_id}}"
+      quantity: 1
+      price: 99.99
+    extract:
+      cart_product_id: "$.json.product_id"
+      cart_quantity: "$.json.quantity"
+      cart_price: "$.json.price"
+
+  - type: assert
+    name: verify_add_to_cart
+    expect:
+      status_code: 200
+
+  # Step 4: View cart
+  - type: http
+    name: view_cart
+    service: httpbin
+    method: POST
+    path: /anything/cart/cart_abc123
+    headers:
+      Content-Type: application/json
+    body:
+      cart_id: cart_abc123
+      items:
+        - product_id: "{{product_id}}"
+          quantity: "{{cart_quantity}}"
+          price: "{{cart_price}}"
+      total: "{{cart_price}}"
+    extract:
+      cart_id: "$.json.cart_id"
+      cart_total: "$.json.total"
+
+  - type: assert
+    name: verify_cart_has_items
+    expect:
+      status_code: 200
+
+  # Step 5: Start checkout
+  - type: http
+    name: start_checkout
+    service: httpbin
+    method: POST
+    path: /anything/checkout
+    headers:
+      Content-Type: application/json
+    body:
+      cart_id: "{{cart_id}}"
+      shipping_address:
+        street: "123 Test Street"
+        city: "Testville"
+        state: "TS"
+        zip: "12345"
+      order_id: order_xyz789
+      session_id: session_123
+      total: "{{cart_total}}"
+      status: pending_payment
+    extract:
+      order_id: "$.json.order_id"
+      checkout_session_id: "$.json.session_id"
+      order_total: "$.json.total"
+
+  - type: assert
+    name: verify_checkout_pending
+    expect:
+      jsonpath: "$.json.status"
+      equals: "pending_payment"
+
+  # Step 6: Submit payment
+  - type: http
+    name: submit_payment
+    service: httpbin
+    method: POST
+    path: /anything/payments
+    headers:
+      Content-Type: application/json
+    body:
+      order_id: "{{order_id}}"
+      session_id: "{{checkout_session_id}}"
+      amount: "{{order_total}}"
+      payment_method:
+        type: credit_card
+        token: tok_test_visa
+      payment_id: pay_success_001
+      status: success
+    extract:
+      payment_id: "$.json.payment_id"
+      payment_status: "$.json.status"
+
+  - type: assert
+    name: verify_payment_success
+    expect:
+      jsonpath: "$.json.status"
+      equals: "success"
+
+  # Step 7: Verify order (final)
+  - type: http
+    name: verify_order
+    service: httpbin
+    method: POST
+    path: "/anything/orders/{{order_id}}"
+    headers:
+      Content-Type: application/json
+    body:
+      order_id: "{{order_id}}"
+      status: confirmed
+      items:
+        - product_id: "{{product_id}}"
+          quantity: 1
+      payment:
+        payment_id: "{{payment_id}}"
+        status: "{{payment_status}}"
+      total: "{{order_total}}"
+
+# Final assertions after flow completes
+assertions:
+  - name: order_confirmed
+    expect:
+      jsonpath: "$.json.status"
+      equals: "confirmed"
+
+  - name: payment_recorded
+    expect:
+      jsonpath: "$.json.payment.status"
+      equals: "success"
+
+  - name: response_schema_valid
+    expect:
+      schema:
+        type: object
+        required:
+          - json
+        properties:
+          json:
+            type: object
+            required:
+              - order_id
+              - status
+              - items
+              - payment
+              - total
+
+stop_when:
+  any_action_fails: true

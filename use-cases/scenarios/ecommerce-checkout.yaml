@@ -1,0 +1,199 @@
+# E-commerce Checkout Flow Scenario
+#
+# Simulates a complete user journey from browsing products to completing purchase.
+# This is the "ideal" scenario for a real e-commerce API.
+
+id: ecommerce-checkout
+description: Complete checkout flow - browse, cart, checkout, payment, verify
+
+flow:
+  # Step 1: Browse available products
+  - type: http
+    name: browse_products
+    service: api
+    method: GET
+    path: /api/v1/products
+    query:
+      category: electronics
+      limit: "10"
+    extract:
+      first_product_id: "$.products[0].id"
+      first_product_price: "$.products[0].price"
+
+  - type: assert
+    name: verify_products_returned
+    expect:
+      status_code: 200
+
+  # Step 2: Get product details
+  - type: http
+    name: get_product_details
+    service: api
+    method: GET
+    path: "/api/v1/products/{{first_product_id}}"
+    extract:
+      product_name: "$.name"
+      product_sku: "$.sku"
+      stock_available: "$.inventory.available"
+
+  - type: assert
+    name: verify_in_stock
+    expect:
+      jsonpath: "$.inventory.available"
+      expression: "value > 0"
+
+  # Step 3: Add product to cart
+  - type: http
+    name: add_to_cart
+    service: api
+    method: POST
+    path: /api/v1/cart/items
+    headers:
+      Content-Type: application/json
+    body:
+      product_id: "{{first_product_id}}"
+      quantity: 1
+      price: "{{first_product_price}}"
+    extract:
+      cart_id: "$.cart_id"
+      cart_item_id: "$.item_id"
+
+  - type: assert
+    name: verify_cart_created
+    expect:
+      status_code: 201
+
+  # Step 4: View cart and verify contents
+  - type: http
+    name: view_cart
+    service: api
+    method: GET
+    path: "/api/v1/cart/{{cart_id}}"
+    extract:
+      cart_total: "$.total"
+      item_count: "$.items.length()"
+
+  - type: assert
+    name: verify_cart_has_items
+    expect:
+      status_code: 200
+
+  - type: assert
+    name: verify_correct_product_in_cart
+    expect:
+      jsonpath: "$.items[0].product_id"
+      equals: "{{first_product_id}}"
+
+  # Step 5: Start checkout process
+  - type: http
+    name: start_checkout
+    service: api
+    method: POST
+    path: /api/v1/checkout
+    headers:
+      Content-Type: application/json
+    body:
+      cart_id: "{{cart_id}}"
+      shipping_address:
+        street: "123 Test Street"
+        city: "Testville"
+        state: "TS"
+        zip: "12345"
+        country: "US"
+      billing_same_as_shipping: true
+    extract:
+      order_id: "$.order_id"
+      checkout_session_id: "$.session_id"
+      order_total: "$.total"
+
+  - type: assert
+    name: verify_checkout_pending
+    expect:
+      jsonpath: "$.status"
+      equals: "pending_payment"
+
+  # Step 6: Submit payment
+  - type: http
+    name: submit_payment
+    service: api
+    method: POST
+    path: /api/v1/payments
+    headers:
+      Content-Type: application/json
+    body:
+      order_id: "{{order_id}}"
+      session_id: "{{checkout_session_id}}"
+      payment_method:
+        type: credit_card
+        token: "tok_test_visa_success"
+      amount: "{{order_total}}"
+    extract:
+      payment_id: "$.payment_id"
+      payment_status: "$.status"
+
+  - type: assert
+    name: verify_payment_accepted
+    expect:
+      status_code: 200
+
+  # Step 7: Wait for payment processing (if async)
+  - type: wait
+    name: wait_for_payment
+    service: api
+    path: "/api/v1/payments/{{payment_id}}"
+    interval_seconds: 0.5
+    timeout_seconds: 10
+    expect:
+      jsonpath: "$.status"
+      equals: "success"
+
+  # Step 8: Verify final order state
+  - type: http
+    name: verify_order
+    service: api
+    method: GET
+    path: "/api/v1/orders/{{order_id}}"
+
+# Final assertions after flow completes
+assertions:
+  - name: order_confirmed
+    expect:
+      jsonpath: "$.status"
+      equals: "confirmed"
+
+  - name: payment_success
+    expect:
+      jsonpath: "$.payment.status"
+      equals: "success"
+
+  - name: correct_product
+    expect:
+      jsonpath: "$.items[0].product_id"
+      equals: "{{first_product_id}}"
+
+  - name: order_schema_valid
+    expect:
+      schema:
+        type: object
+        required:
+          - order_id
+          - status
+          - items
+          - payment
+          - shipping_address
+          - total
+        properties:
+          order_id:
+            type: string
+          status:
+            type: string
+            enum: ["confirmed", "processing", "shipped", "delivered"]
+          items:
+            type: array
+            minItems: 1
+          total:
+            type: number
+            minimum: 0
+
+stop_when:
+  any_action_fails: true
