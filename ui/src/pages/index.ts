@@ -3,3 +3,4 @@ export { RunDetailPage } from './RunDetailPage';
 export { InstanceTimelinePage } from './InstanceTimelinePage';
 export { ErrorPage } from './ErrorPage';
 export { SystemPage } from './SystemPage';
+export { ScenarioVisualizerPage } from './ScenarioVisualizerPage';
