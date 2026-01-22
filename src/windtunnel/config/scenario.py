@@ -18,6 +18,10 @@ class Expectation(BaseModel):
         default=None,
         description="JSONPath expression to extract value for comparison",
     )
+    context_path: str | None = Field(
+        default=None,
+        description="Context key to extract value for comparison",
+    )
     equals: Any | None = Field(
         default=None,
         description="Expected value must equal this",
