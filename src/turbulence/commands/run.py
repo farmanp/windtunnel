@@ -224,6 +224,9 @@ async def _run_instances(
                         if scenario.stop_when.any_assertion_fails:
                             break
         except Exception as exc:
+            import traceback
+            from logging import getLogger
+            getLogger(__name__).debug(f"Unexpected exception in instance execution: {traceback.format_exc()}")
             passed = False
             error = str(exc)
 

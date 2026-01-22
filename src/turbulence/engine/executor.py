@@ -273,6 +273,9 @@ class ParallelExecutor:
                 await self._record_result(result)
                 return result
             except Exception as e:
+                import traceback
+                logger.debug(f"Unexpected exception in instance {instance_index}: {traceback.format_exc()}")
+
                 # Create error result for unexpected exceptions
                 error_result = InstanceResult(
                     instance_id=f"error_{instance_index}",

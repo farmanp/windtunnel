@@ -6,13 +6,13 @@ from datetime import datetime, timezone
 from typing import Any
 
 import httpx
-from jsonpath_ng import parse as jsonpath_parse
-from jsonpath_ng.exceptions import JsonPathParserError
 
 from turbulence.actions.base import BaseActionRunner
 from turbulence.config.scenario import HttpAction
 from turbulence.config.sut import SUTConfig
 from turbulence.models.observation import Observation
+from turbulence.utils.extractor import extract_values
+from turbulence.utils.retry_policy import RetryConfig, with_retry
 
 
 class HttpActionRunner(BaseActionRunner):
@@ -45,27 +45,17 @@ class HttpActionRunner(BaseActionRunner):
         self,
         context: dict[str, Any],
     ) -> tuple[Observation, dict[str, Any]]:
-        """Execute the HTTP action and return observation with updated context.
-
-        Args:
-            context: Current execution context with variables.
-
-        Returns:
-            A tuple of (Observation, updated_context) where updated_context
-            contains any extracted values merged with the input context.
-        """
+        """Execute the HTTP action and return observation with updated context."""
         service = self.sut_config.get_service(self.action.service)
         base_url = str(service.base_url)
         url = f"{base_url}{self.action.path}"
 
-        # Merge headers: default -> service -> action
         headers = {
             **self.sut_config.default_headers,
             **service.headers,
             **self.action.headers,
         }
 
-        # Build request kwargs
         request_kwargs: dict[str, Any] = {
             "method": self.action.method.upper(),
             "url": url,
@@ -74,166 +64,141 @@ class HttpActionRunner(BaseActionRunner):
             "timeout": service.timeout_seconds,
         }
 
-        # Add JSON body if present
         if self.action.body is not None:
             request_kwargs["json"] = self.action.body
 
-        # Determine retry configuration
-        retry_config = self.action.retry
-        max_attempts = retry_config.max_attempts if retry_config else 1
-        
-        # Track overall execution
-        total_start_time = time.perf_counter()
         attempts: list[dict[str, Any]] = []
-        
-        # Variables to hold final state
-        response_body: Any = None
-        response_headers: dict[str, str] = {}
-        status_code: int | None = None
-        final_errors: list[str] = []
-        ok = False
 
-        for attempt_idx in range(1, max_attempts + 1):
-            is_last_attempt = attempt_idx == max_attempts
-            attempt_start = time.perf_counter()
-            current_errors: list[str] = []
-            should_retry = False
-            
-            try:
-                if self._client is not None:
-                    response = await self._client.request(**request_kwargs)
-                else:
-                    async with httpx.AsyncClient() as client:
-                        response = await client.request(**request_kwargs)
-                
-                status_code = response.status_code
-                response_headers = dict(response.headers)
-                
-                # Parse response body
-                try:
-                    response_body = response.json()
-                except Exception:
-                    response_body = response.text
+        def on_attempt(idx: int, obs: Observation | None, exc: Exception | None, dur: float):
+            status_code = obs.status_code if obs else None
+            ok = obs.ok if obs else False
+            error = None
+            if exc:
+                error = str(exc)
+            elif obs and not obs.ok:
+                error = obs.errors[0] if obs.errors else f"HTTP {status_code}"
 
-                ok = 200 <= status_code < 300
-                
-                if not ok:
-                    current_errors.append(f"HTTP {status_code}: {response.reason_phrase}")
-                    if retry_config and status_code in retry_config.on_status:
-                        should_retry = True
-
-            except httpx.TimeoutException as e:
-                current_errors.append(f"Request timeout: {e}")
-                if retry_config and retry_config.on_timeout:
-                    should_retry = True
-            except (httpx.ConnectError, httpx.ConnectTimeout) as e:
-                current_errors.append(f"Connection error: {e}")
-                if retry_config and retry_config.on_connection_error:
-                    should_retry = True
-            except httpx.RequestError as e:
-                current_errors.append(f"Request error: {e}")
-                # Generic request errors usually not retried unless explicitly covered
-            except Exception as e:
-                current_errors.append(f"Unexpected error: {e}")
-
-            attempt_duration = (time.perf_counter() - attempt_start) * 1000
-            
             attempts.append({
-                "attempt": attempt_idx,
+                "attempt": idx,
                 "status_code": status_code,
                 "ok": ok,
-                "latency_ms": attempt_duration,
+                "latency_ms": dur,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "error": current_errors[0] if current_errors else None
+                "error": error
             })
 
-            if ok:
-                break
-            
-            if should_retry and not is_last_attempt:
-                # Calculate backoff delay
-                delay = 0.0
-                if retry_config:
-                    if retry_config.backoff == "fixed":
-                        delay = retry_config.delay_ms / 1000.0
-                    elif retry_config.backoff == "exponential":
-                        # Exponential backoff: base * 2^(attempt-1)
-                        # attempt_idx is 1-based. So 1->base, 2->2*base, etc.
-                        # Wait, typically attempt 1 failed, we are about to start attempt 2.
-                        # backoff factor usually applies to the retry count.
-                        retry_count = attempt_idx
-                        delay_ms = min(
-                            retry_config.base_delay_ms * (2 ** (retry_count - 1)),
-                            retry_config.max_delay_ms
-                        )
-                        delay = delay_ms / 1000.0
-                
-                await asyncio.sleep(delay)
-            else:
-                final_errors = current_errors
-                break
-
-        total_latency_ms = (time.perf_counter() - total_start_time) * 1000
-        
-        # Create observation
-        observation = Observation(
-            ok=ok,
-            status_code=status_code,
-            latency_ms=total_latency_ms,
-            headers=response_headers,
-            body=response_body,
-            errors=final_errors,
-            action_name=self.action.name,
-            service=self.action.service,
-            attempts=attempts,
-        )
-
-        # Extract values into context
-        updated_context = dict(context)
-        if ok and response_body is not None and self.action.extract:
-            extraction_errors = self._extract_values(
-                response_body,
-                self.action.extract,
-                updated_context,
+        # Configure retry
+        max_attempts = 1
+        retry_policy = None
+        if self.action.retry:
+            max_attempts = self.action.retry.max_attempts
+            retry_policy = RetryConfig(
+                max_attempts=max_attempts,
+                strategy=self.action.retry.backoff,
+                delay_seconds=self.action.retry.delay_ms / 1000.0 if self.action.retry.backoff == "fixed" else self.action.retry.base_delay_ms / 1000.0,
+                max_delay_seconds=self.action.retry.max_delay_ms / 1000.0
             )
-            if extraction_errors:
-                observation.errors.extend(extraction_errors)
+        else:
+            retry_policy = RetryConfig(max_attempts=1, strategy="fixed")
+
+        async def do_request() -> Observation:
+            return await self._execute_single_request(request_kwargs)
+
+        def is_retryable(e: Exception) -> bool:
+            if not self.action.retry:
+                return False
+            if isinstance(e, httpx.TimeoutException):
+                return self.action.retry.on_timeout
+            if isinstance(e, (httpx.ConnectError, httpx.ConnectTimeout)):
+                return self.action.retry.on_connection_error
+            return False
+
+        def should_retry_result(obs: Observation) -> bool:
+            if not self.action.retry or not obs.status_code:
+                return False
+            return obs.status_code in self.action.retry.on_status
+
+        total_start = time.perf_counter()
+        try:
+            observation = await with_retry(
+                do_request,
+                retry_policy,
+                is_retryable=is_retryable,
+                should_retry_result=should_retry_result,
+                on_attempt=on_attempt
+            )
+        except Exception as e:
+            # If all retries failed with exception, create a failure observation
+            error_msg = str(e)
+            if isinstance(e, httpx.TimeoutException):
+                error_msg = f"Request timeout: {e}"
+            elif isinstance(e, (httpx.ConnectError, httpx.ConnectTimeout)):
+                error_msg = f"Connection error: {e}"
+            elif isinstance(e, httpx.RequestError):
+                error_msg = f"Request error: {e}"
+
+            observation = Observation(
+                ok=False,
+                status_code=None,
+                latency_ms=(time.perf_counter() - total_start) * 1000,
+                headers={},
+                body=None,
+                errors=[error_msg],
+                action_name=self.action.name,
+                service=self.action.service,
+                attempts=attempts,
+            )
+
+        observation.attempts = attempts
+        observation.latency_ms = (time.perf_counter() - total_start) * 1000
+
+        # Extraction logic
+        updated_context = dict(context)
+        if observation.ok and observation.body and self.action.extract:
+            extracted = extract_values(observation.body, self.action.extract)
+            updated_context.update(extracted)
+            
+            # Check for missing extractions to report as errors
+            for key in self.action.extract:
+                if key not in extracted:
+                    observation.errors.append(f"JSONPath '{self.action.extract[key]}' did not match any values")
 
         return observation, updated_context
 
-    def _extract_values(
-        self,
-        body: Any,
-        extract_config: dict[str, str],
-        context: dict[str, Any],
-    ) -> list[str]:
-        """Extract values from response body using JSONPath expressions.
-
-        Args:
-            body: The response body to extract from.
-            extract_config: Mapping of context keys to JSONPath expressions.
-            context: The context dictionary to update with extracted values.
-
-        Returns:
-            List of error messages for any failed extractions.
-        """
-        errors: list[str] = []
-
-        for key, jsonpath_expr in extract_config.items():
+    async def _execute_single_request(self, request_kwargs: dict[str, Any]) -> Observation:
+        """Execute a single HTTP request and return an Observation."""
+        start_time = time.perf_counter()
+        
+        try:
+            if self._client is not None:
+                response = await self._client.request(**request_kwargs)
+            else:
+                async with httpx.AsyncClient() as client:
+                    response = await client.request(**request_kwargs)
+            
+            status_code = response.status_code
+            headers = dict(response.headers)
+            
             try:
-                parsed_path = jsonpath_parse(jsonpath_expr)
-                matches = parsed_path.find(body)
+                body = response.json()
+            except Exception:
+                body = response.text
 
-                if matches:
-                    # Take the first match value
-                    context[key] = matches[0].value
-                else:
-                    errors.append(
-                        f"JSONPath '{jsonpath_expr}' did not match any values"
-                    )
-            except JsonPathParserError as e:
-                errors.append(f"Invalid JSONPath '{jsonpath_expr}': {e}")
-            except Exception as e:
-                errors.append(f"Error extracting '{key}': {e}")
+            ok = 200 <= status_code < 300
+            errors = []
+            if not ok:
+                errors.append(f"HTTP {status_code}: {response.reason_phrase}")
 
-        return errors
+            return Observation(
+                ok=ok,
+                status_code=status_code,
+                latency_ms=(time.perf_counter() - start_time) * 1000,
+                headers=headers,
+                body=body,
+                errors=errors,
+                action_name=self.action.name,
+                service=self.action.service,
+            )
+        except Exception:
+            # Re-raise to let with_retry handle it
+            raise

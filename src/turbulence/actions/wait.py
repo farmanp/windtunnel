@@ -175,11 +175,16 @@ class WaitActionRunner(BaseActionRunner):
 
                 last_body = poll_body
 
+            except (asyncio.CancelledError, KeyboardInterrupt):
+                raise
             except httpx.TimeoutException as e:
                 poll_error = f"Request timeout: {e}"
             except httpx.RequestError as e:
                 poll_error = f"Request error: {e}"
             except Exception as e:
+                import traceback
+                from logging import getLogger
+                getLogger(__name__).debug(f"Unexpected exception in poll request: {traceback.format_exc()}")
                 poll_error = f"Unexpected error: {e}"
 
             poll_end = time.perf_counter()

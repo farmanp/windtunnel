@@ -84,11 +84,12 @@ class SafeExpressionEvaluator:
                 {"__builtins__": {}},
                 safe_locals,
             )
-        except ExpressionTimeoutError:
-            raise
-        except ExpressionError:
+        except (ExpressionTimeoutError, ExpressionError):
             raise
         except Exception as exc:
+            import traceback
+            from logging import getLogger
+            getLogger(__name__).debug(f"Unexpected exception in expression evaluation: {traceback.format_exc()}")
             raise ExpressionError(f"Expression evaluation failed: {exc}") from exc
 
 
