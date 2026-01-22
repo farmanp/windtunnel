@@ -74,17 +74,17 @@ export function StepDetailPanel({ step, onClose }: StepDetailPanelProps) {
                     {/* Type-specific summary */}
                     {step.type === 'http' && (
                         <div className="space-y-2">
-                            <DetailRow label="Method" value={step.method} />
-                            <DetailRow label="Path" value={step.path} mono />
+                            <DetailRow label="Method" value={step.method || 'GET'} />
+                            <DetailRow label="Path" value={step.path || '/'} mono />
                             {step.service && <DetailRow label="Service" value={step.service} />}
                         </div>
                     )}
 
                     {step.type === 'wait' && (
                         <div className="space-y-2">
-                            <DetailRow label="Path" value={step.path} mono />
-                            <DetailRow label="Timeout" value={`${step.timeout_seconds}s`} />
-                            <DetailRow label="Interval" value={`${step.interval_seconds}s`} />
+                            <DetailRow label="Path" value={step.path || '/'} mono />
+                            <DetailRow label="Timeout" value={`${step.timeout_seconds || 30}s`} />
+                            <DetailRow label="Interval" value={`${step.interval_seconds || 1}s`} />
                         </div>
                     )}
 

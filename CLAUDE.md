@@ -185,6 +185,7 @@ npm run docs:build        # Build static site
 - Retry policies
 - CI gating with thresholds
 - Live progress dashboard
+- Scenario visualizer (YAML-to-Flowchart)
 
 **Upcoming:**
 - Batch 6: Variation engine (FEAT-017)

@@ -90,7 +90,7 @@ A | B    : A and B can run in parallel (no dependency)
             ┌──────────────────────────┼──────────────────────────┐
             │                          │                          │
             ▼                          ▼                          ▼
-       FEAT-026                   FEAT-027                   FEAT-029
+       FEAT-026 [DONE]            FEAT-027 [DONE]            FEAT-029
    (Live Progress)            (Visualizer)               (Results Explorer)
             │                          │
             └──────────────────────────┘
@@ -211,11 +211,11 @@ Execute each batch to completion before starting the next. Within a batch, all t
 
 ---
 
-### Batch 9: Web UI Enhancements
+### Batch 9: Web UI Enhancements [PARTIALLY DONE]
 | Ticket | Title | Dependencies | Estimated Complexity | Status |
 |--------|-------|--------------|---------------------|--------|
 | FEAT-026 | Run Dashboard Live Progress | FEAT-025 | Medium | DONE |
-| FEAT-027 | Scenario Visualizer | FEAT-021 | High | TODO |
+| FEAT-027 | Scenario Visualizer | FEAT-021 | High | DONE |
 | FEAT-028 | Quick Run Launcher | FEAT-021, FEAT-027 | High | TODO |
 | FEAT-029 | Results Explorer | FEAT-023 | Medium | TODO |
 
@@ -223,7 +223,7 @@ Execute each batch to completion before starting the next. Within a batch, all t
 
 ---
 
-### Batch 10: Enterprise Readiness
+### Batch 10: Enterprise Readiness [DONE]
 | Ticket | Title | Dependencies | Estimated Complexity | Status |
 |--------|-------|--------------|---------------------|--------|
 | FEAT-030 | Retry policies for HTTP actions | FEAT-004 | Medium | DONE |
@@ -314,6 +314,6 @@ INFRA-001 → FEAT-002 → FEAT-004 → FEAT-007 → FEAT-008 → FEAT-011 → F
 
 ## AI Agent Status
 
-Turbulence core and Web UI foundation are stable. Live progress dashboard is implemented.
+Turbulence core and Web UI foundation are stable. Scenario Visualizer (FEAT-027) implemented.
 Branching flows (FEAT-019) completed with condition evaluation and BranchAction support.
-**Current Frontier:** Advanced Engine (Batch 7: SQLite, Spikes), Web UI Enhancements (Batch 9).
+**Current Frontier:** Advanced Engine (Batch 7: Spikes), Web UI Enhancements (Batch 9: Quick Launcher, Results Explorer).
