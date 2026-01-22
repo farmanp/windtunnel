@@ -59,3 +59,18 @@ Thumbs.db
 *.log
 .env
 .env.*
+
+# Node.js / Frontend
+node_modules/
+ui/dist/
+ui/.vite/
+*.tsbuildinfo
+.eslintcache
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Run artifacts (generated during tests)
+runs/
