@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Layout } from '@/components/Layout';
-import { RunListPage, RunDetailPage, InstanceTimelinePage, ErrorPage, SystemPage, ScenarioVisualizerPage, QuickRunPage } from '@/pages';
+import { RunListPage, RunDetailPage, InstanceTimelinePage, ErrorPage, SystemPage, ScenarioVisualizerPage, QuickRunPage, ResultsExplorerPage } from '@/pages';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,6 +33,10 @@ const router = createBrowserRouter([
       {
         path: 'scenarios',
         element: <ScenarioVisualizerPage />,
+      },
+      {
+        path: 'explorer',
+        element: <ResultsExplorerPage />,
       },
       {
         path: 'launch',

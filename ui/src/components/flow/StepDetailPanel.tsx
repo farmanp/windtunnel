@@ -43,6 +43,7 @@ export function StepDetailPanel({ step, onClose }: StepDetailPanelProps) {
         http: 'text-cyan-400 border-cyan-500/30',
         wait: 'text-amber-400 border-amber-500/30',
         assert: 'text-emerald-400 border-emerald-500/30',
+        branch: 'text-purple-400 border-purple-500/30',
     };
 
     return (

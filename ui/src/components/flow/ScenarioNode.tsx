@@ -49,6 +49,17 @@ const actionConfig: Record<string, { bg: string; border: string; text: string; g
             </svg>
         ),
     },
+    branch: {
+        bg: 'bg-purple-500/10',
+        border: 'border-purple-500/30',
+        text: 'text-purple-400',
+        glow: 'shadow-[0_0_15px_rgba(168,85,247,0.2)]',
+        icon: (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h8a2 2 0 012 2v9m-10 3H4a2 2 0 01-2-2V5a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M8 7V5" />
+            </svg>
+        ),
+    },
 };
 
 interface ScenarioNodeProps {

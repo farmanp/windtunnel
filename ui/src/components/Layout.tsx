@@ -25,6 +25,7 @@ export function Layout() {
                     {/* Navigation */}
                     <nav className="flex-1 space-y-2">
                         <NavItem to="/" icon={<RunsIcon />} label="Executions" />
+                        <NavItem to="/explorer" icon={<ExplorerIcon />} label="Explorer" />
                         <NavItem to="/launch" icon={<QuickRunIcon />} label="Quick Run" />
                         <NavItem to="/scenarios" icon={<ScenariosIcon />} label="Scenarios" />
                         <NavItem to="/settings" icon={<SettingsIcon />} label="System" />
@@ -105,6 +106,14 @@ function QuickRunIcon() {
     return (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+    );
+}
+
+function ExplorerIcon() {
+    return (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
     );
 }

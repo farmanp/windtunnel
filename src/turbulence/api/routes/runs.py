@@ -19,18 +19,29 @@ def get_reader(request: Request) -> ArtifactReaderService:
 def list_runs(
     request: Request,
     limit: int = Query(default=50, ge=1, le=100),
+    query: str | None = Query(default=None),
+    status: str | None = Query(default=None, pattern="^(passed|failed)$"),
+    slow_threshold: float | None = Query(default=None),
 ) -> dict[str, Any]:
     """List all available runs.
 
     Args:
         request: FastAPI request object.
         limit: Maximum number of runs to return.
+        query: Optional search query.
+        status: Optional status filter.
+        slow_threshold: Optional latency threshold.
 
     Returns:
         Dictionary with list of runs.
     """
     reader = get_reader(request)
-    runs = reader.list_runs(limit=limit)
+    runs = reader.list_runs(
+        limit=limit, 
+        query=query, 
+        status=status, 
+        slow_threshold=slow_threshold
+    )
     return {"runs": [asdict(run) for run in runs]}
 
 

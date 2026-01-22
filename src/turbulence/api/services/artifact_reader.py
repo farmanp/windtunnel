@@ -17,6 +17,7 @@ class RunStats:
     errors: int
     pass_rate: float
     duration_ms: float
+    p95_latency_ms: float = 0.0
 
 
 @dataclass
@@ -100,11 +101,20 @@ class ArtifactReaderService:
         """
         self.runs_dir = runs_dir
 
-    def list_runs(self, limit: int = 50) -> list[RunSummary]:
-        """List all available runs.
+    def list_runs(
+        self, 
+        limit: int = 50, 
+        query: str | None = None, 
+        status: str | None = None,
+        slow_threshold: float | None = None
+    ) -> list[RunSummary]:
+        """List available runs with optional filtering.
 
         Args:
             limit: Maximum number of runs to return.
+            query: Optional search query.
+            status: Optional status filter (passed, failed).
+            slow_threshold: Optional latency threshold for 'slow' filter.
 
         Returns:
             List of run summaries, sorted by most recent first.
@@ -124,6 +134,26 @@ class ArtifactReaderService:
 
             try:
                 summary = self._read_run_summary(run_path)
+                
+                # Apply filters
+                if query:
+                    q = query.lower()
+                    matches = (
+                        q in summary.id.lower() or 
+                        q in summary.sut_name.lower() or 
+                        any(q in s.lower() for s in summary.scenarios)
+                    )
+                    if not matches:
+                        continue
+                
+                if status == "passed" and summary.stats.failed > 0:
+                    continue
+                if status == "failed" and summary.stats.failed == 0:
+                    continue
+                
+                if slow_threshold is not None and summary.stats.p95_latency_ms <= slow_threshold:
+                    continue
+
                 runs.append(summary)
             except (json.JSONDecodeError, KeyError, ValueError):
                 continue
@@ -353,6 +383,16 @@ class ArtifactReaderService:
 
         pass_rate = (passed / total * 100) if total > 0 else 0.0
 
+        # Try to load p95 from summary.json
+        summary_path = run_path / "summary.json"
+        p95 = 0.0
+        if summary_path.exists():
+            try:
+                summary_data = json.loads(summary_path.read_text())
+                p95 = summary_data.get("p95_latency_ms", 0.0)
+            except:
+                pass
+
         stats = RunStats(
             total=total,
             passed=passed,
@@ -360,6 +400,7 @@ class ArtifactReaderService:
             errors=errors,
             pass_rate=pass_rate,
             duration_ms=total_duration,
+            p95_latency_ms=p95,
         )
 
         started_at = datetime.fromisoformat(

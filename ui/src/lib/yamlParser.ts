@@ -14,7 +14,7 @@ export interface Scenario {
 
 export interface ScenarioStep {
     name: string;
-    type: 'http' | 'wait' | 'assert';
+    type: 'http' | 'wait' | 'assert' | 'branch';
     // HTTP specific
     service?: string;
     method?: string;

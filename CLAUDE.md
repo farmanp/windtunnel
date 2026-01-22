@@ -187,11 +187,11 @@ npm run docs:build        # Build static site
 - Live progress dashboard
 - Scenario visualizer (YAML-to-Flowchart)
 - Quick Run Launcher (UI-to-Engine orchestration)
+- Results Explorer (Filtering, Comparison, Export)
 
 **Upcoming:**
 - Batch 6: Variation engine (FEAT-017)
-- Batch 7: SQLite backend (FEAT-018), Branching flows (FEAT-019), Multi-protocol research (SPIKE-003)
-- Batch 9: Web UI enhancements (FEAT-027-029)
+- Batch 7: Advanced Engine (Spikes)
 
 See `tickets/TICKET-GRAPH.md` for full roadmap with 32 feature tickets across 10 batches.
 

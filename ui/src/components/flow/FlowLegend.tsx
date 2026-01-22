@@ -9,6 +9,7 @@ export function FlowLegend() {
         { type: 'http', label: 'HTTP Request', color: 'bg-cyan-500' },
         { type: 'wait', label: 'Wait/Poll', color: 'bg-amber-500' },
         { type: 'assert', label: 'Assertion', color: 'bg-emerald-500' },
+        { type: 'branch', label: 'Branching', color: 'bg-purple-500' },
     ];
 
     return (

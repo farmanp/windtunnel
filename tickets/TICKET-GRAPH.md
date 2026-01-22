@@ -211,13 +211,13 @@ Execute each batch to completion before starting the next. Within a batch, all t
 
 ---
 
-### Batch 9: Web UI Enhancements [PARTIALLY DONE]
+### Batch 9: Web UI Enhancements [DONE]
 | Ticket | Title | Dependencies | Estimated Complexity | Status |
 |--------|-------|--------------|---------------------|--------|
 | FEAT-026 | Run Dashboard Live Progress | FEAT-025 | Medium | DONE |
 | FEAT-027 | Scenario Visualizer | FEAT-021 | High | DONE |
 | FEAT-028 | Quick Run Launcher | FEAT-021, FEAT-027 | High | DONE |
-| FEAT-029 | Results Explorer | FEAT-023 | Medium | TODO |
+| FEAT-029 | Results Explorer | FEAT-023 | Medium | DONE |
 
 **Batch Notes:** This batch enhances the Web UI with interactive features. FEAT-026 requires WebSocket streaming from FEAT-025. FEAT-027 and FEAT-029 can start in parallel once their dependencies are met. FEAT-028 depends on both FastAPI backend and the scenario visualizer for preview functionality.
 
