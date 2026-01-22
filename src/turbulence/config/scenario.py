@@ -6,6 +6,7 @@ from typing import Annotated, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from turbulence.pressure.config import TurbulenceConfig
+from turbulence.variation.config import VariationConfig
 
 
 class Expectation(BaseModel):
@@ -252,6 +253,10 @@ class Scenario(BaseModel):
     turbulence: TurbulenceConfig | None = Field(
         default=None,
         description="Optional turbulence configuration for this scenario",
+    )
+    variation: VariationConfig | None = Field(
+        default=None,
+        description="Optional variation configuration for input fuzzing",
     )
 
     @property

@@ -4,6 +4,7 @@ Consolidates step-by-step scenario execution logic used by both
 the run command and replay engine.
 """
 
+import asyncio
 import logging
 from typing import Any, AsyncIterator
 
@@ -69,7 +70,21 @@ class ScenarioRunner:
             Tuple of (step_index, action, observation, updated_context)
             for each executed step
         """
+        # Extract timing config from context if present (injected by VariationEngine)
+        variation_data = context.get("entry", {}).get("seed_data", {}).get("variation", {})
+        step_delay_ms = variation_data.get("_step_delay_ms", 0)
+        jitter_ms = variation_data.get("_timing_jitter_ms", 0)
+
         for step_index, action in enumerate(scenario.flow):
+            # Apply delays/jitter
+            total_delay_ms = 0
+            if step_index > 0:
+                total_delay_ms += step_delay_ms
+            total_delay_ms += jitter_ms
+
+            if total_delay_ms > 0:
+                await asyncio.sleep(total_delay_ms / 1000.0)
+
             observation, context = await self._execute_action(
                 action=action,
                 context=context,
