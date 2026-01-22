@@ -1,5 +1,8 @@
 """Tests for assert action runner (FEAT-006)."""
 
+import json
+from pathlib import Path
+
 import pytest
 
 from windtunnel.actions.assert_ import AssertActionRunner
@@ -430,6 +433,317 @@ class TestContextPathAssertion:
         }
 
         observation, _ = await runner.execute(context)
+        assert observation.ok is True
+
+
+class TestSchemaAssertion:
+    """Test JSON Schema assertions."""
+
+    @pytest.mark.asyncio
+    async def test_schema_inline_passes(self) -> None:
+        """Inline schema validation passes on matching response."""
+        action = AssertAction(
+            name="check_schema",
+            type="assert",
+            expect=Expectation(
+                schema={
+                    "type": "object",
+                    "required": ["id", "status"],
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "status": {"type": "string"},
+                    },
+                }
+            ),
+        )
+        runner = AssertActionRunner(action)
+
+        context = {
+            "last_response": {
+                "status_code": 200,
+                "body": {"id": 123, "status": "active"},
+            }
+        }
+
+        observation, _ = await runner.execute(context)
+
+        assert observation.ok is True
+
+    @pytest.mark.asyncio
+    async def test_schema_missing_required_field_fails(self) -> None:
+        """Schema validation fails with missing required field."""
+        action = AssertAction(
+            name="check_schema_required",
+            type="assert",
+            expect=Expectation(
+                schema={
+                    "type": "object",
+                    "required": ["id", "status", "timestamp"],
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "status": {"type": "string"},
+                        "timestamp": {"type": "string"},
+                    },
+                }
+            ),
+        )
+        runner = AssertActionRunner(action)
+
+        context = {
+            "last_response": {
+                "status_code": 200,
+                "body": {"id": 123, "status": "active"},
+            }
+        }
+
+        observation, _ = await runner.execute(context)
+
+        assert observation.ok is False
+        assert "timestamp" in observation.errors[0]
+
+    @pytest.mark.asyncio
+    async def test_schema_type_mismatch_fails(self) -> None:
+        """Schema validation fails with type mismatch."""
+        action = AssertAction(
+            name="check_schema_type",
+            type="assert",
+            expect=Expectation(
+                schema={
+                    "type": "object",
+                    "properties": {"count": {"type": "integer"}},
+                }
+            ),
+        )
+        runner = AssertActionRunner(action)
+
+        context = {
+            "last_response": {
+                "status_code": 200,
+                "body": {"count": "five"},
+            }
+        }
+
+        observation, _ = await runner.execute(context)
+
+        assert observation.ok is False
+        assert "integer" in observation.errors[0]
+
+    @pytest.mark.asyncio
+    async def test_schema_ref_relative_to_scenario(self, tmp_path: Path) -> None:
+        """$ref schema resolves relative to scenario file location."""
+        schema_dir = tmp_path / "schemas"
+        schema_dir.mkdir()
+        schema_file = schema_dir / "order.json"
+        schema_file.write_text(
+            json.dumps(
+                {
+                    "type": "object",
+                    "required": ["id"],
+                    "properties": {"id": {"type": "string"}},
+                }
+            )
+        )
+
+        scenario_path = tmp_path / "order.yaml"
+        scenario_path.write_text("id: order")
+
+        action = AssertAction(
+            name="check_schema_ref",
+            type="assert",
+            expect=Expectation(schema={"$ref": "schemas/order.json"}),
+        )
+        runner = AssertActionRunner(action)
+
+        context = {
+            "_scenario_path": scenario_path,
+            "last_response": {
+                "status_code": 200,
+                "body": {"id": "ord_123"},
+            },
+        }
+
+        observation, _ = await runner.execute(context)
+
+        assert observation.ok is True
+
+    @pytest.mark.asyncio
+    async def test_schema_nested_error_path(self) -> None:
+        """Schema error message includes full JSON path."""
+        action = AssertAction(
+            name="check_schema_nested",
+            type="assert",
+            expect=Expectation(
+                schema={
+                    "type": "object",
+                    "properties": {
+                        "order": {
+                            "type": "object",
+                            "properties": {
+                                "items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "price": {"type": "number"}
+                                        },
+                                        "required": ["price"],
+                                    },
+                                }
+                            },
+                        }
+                    },
+                }
+            ),
+        )
+        runner = AssertActionRunner(action)
+
+        context = {
+            "last_response": {
+                "status_code": 200,
+                "body": {"order": {"items": [{"price": "free"}]}},
+            }
+        }
+
+        observation, _ = await runner.execute(context)
+
+        assert observation.ok is False
+        assert "$.order.items[0].price" in observation.errors[0]
+
+
+class TestExpressionAssertion:
+    """Test expression-based assertions."""
+
+    @pytest.mark.asyncio
+    async def test_expression_sum_passes(self) -> None:
+        """Expression passes when sum matches."""
+        action = AssertAction(
+            name="sum_check",
+            type="assert",
+            expect=Expectation(
+                expression="sum([e['amount'] for e in body['entries']]) == 60"
+            ),
+        )
+        runner = AssertActionRunner(action)
+
+        context = {
+            "last_response": {
+                "body": {
+                    "entries": [{"amount": 10}, {"amount": 20}, {"amount": 30}]
+                }
+            }
+        }
+
+        observation, _ = await runner.execute(context)
+
+        assert observation.ok is True
+
+    @pytest.mark.asyncio
+    async def test_expression_all_passes(self) -> None:
+        """Expression passes when all items meet condition."""
+        action = AssertAction(
+            name="all_check",
+            type="assert",
+            expect=Expectation(
+                expression="all(i['status'] == 'shipped' for i in body['items'])"
+            ),
+        )
+        runner = AssertActionRunner(action)
+
+        context = {
+            "last_response": {
+                "body": {"items": [{"status": "shipped"}, {"status": "shipped"}]}
+            }
+        }
+
+        observation, _ = await runner.execute(context)
+
+        assert observation.ok is True
+
+    @pytest.mark.asyncio
+    async def test_expression_access_context(self) -> None:
+        """Expression can access context variables."""
+        action = AssertAction(
+            name="context_check",
+            type="assert",
+            expect=Expectation(expression="body['total'] == context['expected_total']"),
+        )
+        runner = AssertActionRunner(action)
+
+        context = {
+            "expected_total": 100,
+            "last_response": {"body": {"total": 100}},
+        }
+
+        observation, _ = await runner.execute(context)
+
+        assert observation.ok is True
+
+    @pytest.mark.asyncio
+    async def test_expression_blocks_imports(self) -> None:
+        """Expression blocks import attempts."""
+        action = AssertAction(
+            name="import_block",
+            type="assert",
+            expect=Expectation(expression="__import__('os').system('ls')"),
+        )
+        runner = AssertActionRunner(action)
+
+        observation, _ = await runner.execute({"last_response": {"body": {}}})
+
+        assert observation.ok is False
+        assert "blocked" in observation.errors[0]
+
+    @pytest.mark.asyncio
+    async def test_expression_blocks_file_access(self) -> None:
+        """Expression blocks file access attempts."""
+        action = AssertAction(
+            name="file_block",
+            type="assert",
+            expect=Expectation(expression="open('/etc/passwd').read()"),
+        )
+        runner = AssertActionRunner(action)
+
+        observation, _ = await runner.execute({"last_response": {"body": {}}})
+
+        assert observation.ok is False
+        assert "blocked" in observation.errors[0]
+
+    @pytest.mark.asyncio
+    async def test_expression_timeout(self) -> None:
+        """Expression times out on long-running evaluation."""
+        action = AssertAction(
+            name="timeout_check",
+            type="assert",
+            expect=Expectation(expression="sum(range(10**9))"),
+        )
+        runner = AssertActionRunner(action)
+
+        observation, _ = await runner.execute({"last_response": {"body": {}}})
+
+        assert observation.ok is False
+        assert "timed out" in observation.errors[0]
+
+    @pytest.mark.asyncio
+    async def test_expression_access_headers(self) -> None:
+        """Expression can access response headers."""
+        action = AssertAction(
+            name="header_check",
+            type="assert",
+            expect=Expectation(
+                expression="headers['X-Request-ID'].startswith('req_')"
+            ),
+        )
+        runner = AssertActionRunner(action)
+
+        context = {
+            "last_response": {
+                "body": {},
+                "headers": {"X-Request-ID": "req_123"},
+            }
+        }
+
+        observation, _ = await runner.execute(context)
+
         assert observation.ok is True
 
 

@@ -1,14 +1,22 @@
 """Assert action runner for validating expectations."""
 
 import time
+from pathlib import Path
 from typing import Any
 
 from jsonpath_ng import parse as jsonpath_parse
 from jsonpath_ng.exceptions import JsonPathParserError
 
 from windtunnel.config.scenario import AssertAction, Expectation
+from windtunnel.evaluation import (
+    ExpressionError,
+    ExpressionSecurityError,
+    ExpressionTimeoutError,
+    SafeExpressionEvaluator,
+)
 from windtunnel.models.assertion_result import AssertionResult
 from windtunnel.models.observation import Observation
+from windtunnel.validation import SchemaValidationError, validate_json_schema
 
 # Sentinel object to distinguish "not set" from "set to None"
 _NOT_SET = object()
@@ -28,6 +36,7 @@ class AssertActionRunner:
             action: The assert action configuration.
         """
         self.action = action
+        self._expression_evaluator = SafeExpressionEvaluator()
 
     async def execute(
         self,
@@ -87,6 +96,14 @@ class AssertActionRunner:
         if expect.status_code is not None:
             return self._evaluate_status_code(expect, context)
 
+        # JSON Schema assertion
+        if expect.json_schema is not None:
+            return self._evaluate_schema(expect, context)
+
+        # Expression assertion
+        if expect.expression is not None:
+            return self._evaluate_expression(expect, context)
+
         # JSONPath assertion
         if expect.jsonpath is not None:
             return self._evaluate_jsonpath(expect, context)
@@ -101,7 +118,7 @@ class AssertActionRunner:
             passed=False,
             message=(
                 "No expectation specified "
-                "(need status_code, jsonpath, or context_path)"
+                "(need status_code, jsonpath, context_path, schema, or expression)"
             ),
         )
 
@@ -151,6 +168,127 @@ class AssertActionRunner:
             actual=actual_status,
             message=message,
             comparison="status_code",
+        )
+
+    def _evaluate_schema(
+        self,
+        expect: Expectation,
+        context: dict[str, Any],
+    ) -> AssertionResult:
+        """Evaluate JSON Schema expectation against response body.
+
+        Args:
+            expect: Expectation with schema.
+            context: Context containing last_response and scenario path.
+
+        Returns:
+            AssertionResult for schema validation.
+        """
+        last_response = context.get("last_response", {})
+        body = last_response.get("body")
+
+        if body is None:
+            return AssertionResult(
+                name=self.action.name,
+                passed=False,
+                expected=expect.json_schema,
+                actual=None,
+                message="No response body in context",
+                comparison="schema",
+            )
+
+        scenario_path = context.get("_scenario_path")
+        base_path: Path | None = None
+        if isinstance(scenario_path, Path):
+            base_path = scenario_path
+        elif isinstance(scenario_path, str):
+            base_path = Path(scenario_path)
+
+        try:
+            validate_json_schema(
+                body,
+                expect.json_schema,
+                base_path=base_path,
+            )
+        except SchemaValidationError as exc:
+            return AssertionResult(
+                name=self.action.name,
+                passed=False,
+                expected=expect.json_schema,
+                actual=None,
+                message=str(exc),
+                path=exc.path,
+                comparison="schema",
+            )
+
+        return AssertionResult(
+            name=self.action.name,
+            passed=True,
+            expected=expect.json_schema,
+            actual=None,
+            message="Schema validation passed",
+            comparison="schema",
+        )
+
+    def _evaluate_expression(
+        self,
+        expect: Expectation,
+        context: dict[str, Any],
+    ) -> AssertionResult:
+        """Evaluate expression expectation against response/context."""
+        last_response = context.get("last_response", {})
+        body = last_response.get("body")
+        headers = last_response.get("headers", {})
+
+        try:
+            result = self._expression_evaluator.evaluate(
+                expect.expression,
+                body=body,
+                headers=headers,
+                context=context,
+            )
+        except ExpressionTimeoutError as exc:
+            return AssertionResult(
+                name=self.action.name,
+                passed=False,
+                expected=True,
+                actual=None,
+                message=str(exc),
+                comparison="expression",
+            )
+        except ExpressionSecurityError as exc:
+            return AssertionResult(
+                name=self.action.name,
+                passed=False,
+                expected=True,
+                actual=None,
+                message=f"Expression blocked: {exc}",
+                comparison="expression",
+            )
+        except ExpressionError as exc:
+            return AssertionResult(
+                name=self.action.name,
+                passed=False,
+                expected=True,
+                actual=None,
+                message=str(exc),
+                comparison="expression",
+            )
+
+        passed = bool(result)
+        message = (
+            "Expression evaluated to True"
+            if passed
+            else f"Expression evaluated to False (result={result!r})"
+        )
+
+        return AssertionResult(
+            name=self.action.name,
+            passed=passed,
+            expected=True,
+            actual=result,
+            message=message,
+            comparison="expression",
         )
 
     def _evaluate_jsonpath(

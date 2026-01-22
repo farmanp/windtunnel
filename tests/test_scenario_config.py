@@ -4,6 +4,7 @@ from pathlib import Path
 from textwrap import dedent
 
 import pytest
+from pydantic import ValidationError
 
 from windtunnel.config import (
     AssertAction,
@@ -59,7 +60,7 @@ class TestScenarioModel:
 
     def test_missing_id_fails(self) -> None:
         """Scenario without id fails validation."""
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             Scenario.model_validate({"description": "No ID"})
 
 

@@ -1,7 +1,7 @@
 """Tests for artifact storage and JSONL persistence."""
 
 import json
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -678,7 +678,7 @@ class TestArtifactStore:
         )
         store.initialize()
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         store.write_instance(
             instance_id="inst_001",
             correlation_id="corr_001",

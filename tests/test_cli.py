@@ -28,7 +28,7 @@ class TestRunCommand:
     """Test the run command options."""
 
     def test_run_help_shows_options(self) -> None:
-        """run --help shows all required options."""
+        """Run --help shows all required options."""
         result = runner.invoke(app, ["run", "--help"])
         assert result.exit_code == 0
         assert "--sut" in result.stdout
@@ -38,13 +38,13 @@ class TestRunCommand:
         assert "--seed" in result.stdout
 
     def test_run_requires_sut_option(self) -> None:
-        """run command requires --sut option."""
+        """Run command requires --sut option."""
         result = runner.invoke(app, ["run", "--scenarios", "."])
         assert result.exit_code != 0
         # Just verify it fails - error message format varies by typer version
 
     def test_run_requires_scenarios_option(self) -> None:
-        """run command requires --scenarios option."""
+        """Run command requires --scenarios option."""
         result = runner.invoke(app, ["run", "--sut", "sut.yaml"])
         assert result.exit_code != 0
 
@@ -53,13 +53,13 @@ class TestReportCommand:
     """Test the report command options."""
 
     def test_report_help_shows_options(self) -> None:
-        """report --help shows --run-id option."""
+        """Report --help shows --run-id option."""
         result = runner.invoke(app, ["report", "--help"])
         assert result.exit_code == 0
         assert "--run-id" in result.stdout
 
     def test_report_requires_run_id(self) -> None:
-        """report command requires --run-id option."""
+        """Report command requires --run-id option."""
         result = runner.invoke(app, ["report"])
         assert result.exit_code != 0
 
@@ -68,14 +68,14 @@ class TestReplayCommand:
     """Test the replay command options."""
 
     def test_replay_help_shows_options(self) -> None:
-        """replay --help shows --run-id and --instance-id options."""
+        """Replay --help shows --run-id and --instance-id options."""
         result = runner.invoke(app, ["replay", "--help"])
         assert result.exit_code == 0
         assert "--run-id" in result.stdout
         assert "--instance-id" in result.stdout
 
     def test_replay_requires_both_ids(self) -> None:
-        """replay command requires both --run-id and --instance-id."""
+        """Replay command requires both --run-id and --instance-id."""
         result = runner.invoke(app, ["replay", "--run-id", "test"])
         assert result.exit_code != 0
 

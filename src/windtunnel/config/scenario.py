@@ -1,14 +1,17 @@
 """Scenario configuration models for workflow definitions."""
 
+from pathlib import Path
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
+
+from windtunnel.turbulence.config import TurbulenceConfig
 
 
 class Expectation(BaseModel):
     """Expectation for assertions and wait conditions."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     status_code: int | None = Field(
         default=None,
@@ -29,6 +32,15 @@ class Expectation(BaseModel):
     contains: Any | None = Field(
         default=None,
         description="Expected value must contain this",
+    )
+    json_schema: dict[str, Any] | None = Field(
+        default=None,
+        description="JSON Schema to validate response against (inline or $ref)",
+        alias="schema",
+    )
+    expression: str | None = Field(
+        default=None,
+        description="Python expression to evaluate against response/context",
     )
 
 
@@ -158,6 +170,8 @@ class Scenario(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    _source_path: Path | None = PrivateAttr(default=None)
+
     id: str = Field(
         ...,
         description="Unique identifier for this scenario",
@@ -188,3 +202,12 @@ class Scenario(BaseModel):
         description="Maximum number of steps before forced termination",
         gt=0,
     )
+    turbulence: TurbulenceConfig | None = Field(
+        default=None,
+        description="Optional turbulence configuration for this scenario",
+    )
+
+    @property
+    def source_path(self) -> Path | None:
+        """Return the source path this scenario was loaded from, if known."""
+        return self._source_path

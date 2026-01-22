@@ -9,7 +9,7 @@ import httpx
 import pytest
 from typer.testing import CliRunner
 
-from windtunnel.config.scenario import HttpAction, Scenario
+from windtunnel.config.scenario import HttpAction
 from windtunnel.config.sut import Service, SUTConfig
 from windtunnel.engine.replay import (
     InstanceData,
@@ -160,7 +160,7 @@ class TestReplayEngine:
     """Tests for ReplayEngine class."""
 
     def test_load_instance_success(
-        self, temp_runs_dir: Path, sample_instance_data: dict[str, Any]
+        self, temp_runs_dir: Path
     ) -> None:
         """Test loading an instance successfully."""
         engine = ReplayEngine(runs_dir=temp_runs_dir)
@@ -238,7 +238,7 @@ class TestReplayEngine:
 
     def test_compare_observations_no_difference(self) -> None:
         """Test comparing observations with no difference."""
-        engine = ReplayEngine(runs_dir=Path("."))
+        engine = ReplayEngine(runs_dir=Path())
         observation = Observation(
             ok=True,
             status_code=200,
@@ -253,7 +253,7 @@ class TestReplayEngine:
 
     def test_compare_observations_with_status_difference(self) -> None:
         """Test comparing observations with status code difference."""
-        engine = ReplayEngine(runs_dir=Path("."))
+        engine = ReplayEngine(runs_dir=Path())
         observation = Observation(
             ok=False,
             status_code=500,
@@ -271,7 +271,7 @@ class TestReplayEngine:
 
     def test_compare_observations_no_original(self) -> None:
         """Test comparing when original observation is None."""
-        engine = ReplayEngine(runs_dir=Path("."))
+        engine = ReplayEngine(runs_dir=Path())
         observation = Observation(
             ok=True,
             status_code=200,
@@ -386,7 +386,7 @@ class TestReplayEngine:
             "request",
             new_callable=AsyncMock,
             return_value=mock_response,
-        ) as mock_request:
+        ):
             result = await engine.replay("run_001", "inst_test123")
 
         # Verify correlation ID is in headers
@@ -589,7 +589,7 @@ class TestReplayEdgeCases:
         assert instance.instance_id == "inst_valid"
 
     def test_multiple_instances_in_file(
-        self, temp_runs_dir: Path, sample_instance_data: dict[str, Any]
+        self, temp_runs_dir: Path
     ) -> None:
         """Test loading correct instance from file with multiple instances."""
         engine = ReplayEngine(runs_dir=temp_runs_dir)

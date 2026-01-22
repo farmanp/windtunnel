@@ -1,6 +1,13 @@
 """Windtunnel execution engine."""
 
 from windtunnel.engine.context import WorkflowContext
+from windtunnel.engine.executor import (
+    DEFAULT_PARALLELISM,
+    ExecutionStats,
+    InstanceResult,
+    ParallelExecutor,
+    run_parallel,
+)
 from windtunnel.engine.replay import (
     InstanceData,
     InstanceNotFoundError,
@@ -12,8 +19,12 @@ from windtunnel.engine.replay import (
 from windtunnel.engine.template import TemplateEngine, TemplateError
 
 __all__ = [
+    "DEFAULT_PARALLELISM",
+    "ExecutionStats",
     "InstanceData",
     "InstanceNotFoundError",
+    "InstanceResult",
+    "ParallelExecutor",
     "ReplayEngine",
     "ReplayResult",
     "ScenarioNotFoundError",
@@ -21,4 +32,5 @@ __all__ = [
     "TemplateEngine",
     "TemplateError",
     "WorkflowContext",
+    "run_parallel",
 ]

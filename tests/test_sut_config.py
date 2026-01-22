@@ -4,6 +4,7 @@ from pathlib import Path
 from textwrap import dedent
 
 import pytest
+from pydantic import ValidationError
 
 from windtunnel.config import SUTConfig, load_sut
 from windtunnel.config.loader import ConfigLoadError
@@ -73,19 +74,19 @@ class TestSUTConfig:
 
     def test_missing_name_fails(self) -> None:
         """Config without name fails validation."""
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             SUTConfig.model_validate({
                 "services": {"api": {"base_url": "https://api.example.com"}},
             })
 
     def test_missing_services_fails(self) -> None:
         """Config without services fails validation."""
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             SUTConfig.model_validate({"name": "test"})
 
     def test_service_missing_base_url_fails(self) -> None:
         """Service without base_url fails validation."""
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             SUTConfig.model_validate({
                 "name": "test",
                 "services": {"api": {}},

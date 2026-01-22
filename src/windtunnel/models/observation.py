@@ -43,3 +43,7 @@ class Observation(BaseModel):
         default="",
         description="Name of the action that produced this observation",
     )
+    turbulence: dict[str, Any] | None = Field(
+        default=None,
+        description="Injected turbulence details, if any",
+    )

@@ -1,7 +1,8 @@
 """Artifact storage for run persistence using JSONL files."""
 
 import json
-from datetime import UTC, datetime
+import threading
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -83,6 +84,7 @@ class ArtifactStore:
         self._assertions_passed = 0
         self._assertions_failed = 0
         self._is_initialized = False
+        self._write_lock = threading.Lock()
 
     @property
     def run_id(self) -> str:
@@ -141,7 +143,7 @@ class ArtifactStore:
         self._artifacts_path.mkdir(parents=True, exist_ok=True)
 
         # Record start time
-        self._started_at = datetime.now(UTC)
+        self._started_at = datetime.now(timezone.utc)
 
         # Write manifest
         manifest = RunManifest(
@@ -195,7 +197,7 @@ class ArtifactStore:
             run_id=self._run_id,
             correlation_id=correlation_id,
             scenario_id=scenario_id,
-            started_at=started_at or datetime.now(UTC),
+            started_at=started_at or datetime.now(timezone.utc),
             completed_at=completed_at,
             duration_ms=duration_ms,
             passed=passed,
@@ -203,17 +205,18 @@ class ArtifactStore:
             error=error,
         )
 
-        if self._instances_writer is not None:
-            self._instances_writer.write(record)
+        with self._write_lock:
+            if self._instances_writer is not None:
+                self._instances_writer.write(record)
 
-        # Update tracking
-        self._total_instances += 1
-        if passed is True:
-            self._pass_count += 1
-        elif passed is False:
-            self._fail_count += 1
-        if error is not None:
-            self._error_count += 1
+            # Update tracking
+            self._total_instances += 1
+            if passed is True:
+                self._pass_count += 1
+            elif passed is False:
+                self._fail_count += 1
+            if error is not None:
+                self._error_count += 1
 
     def write_step(
         self,
@@ -250,14 +253,15 @@ class ArtifactStore:
             step_index=step_index,
             step_name=step_name,
             step_type=step_type,
-            timestamp=timestamp or datetime.now(UTC),
+            timestamp=timestamp or datetime.now(timezone.utc),
             observation=obs_dict,
         )
 
-        if self._steps_writer is not None:
-            self._steps_writer.write(record)
+        with self._write_lock:
+            if self._steps_writer is not None:
+                self._steps_writer.write(record)
 
-        self._total_steps += 1
+            self._total_steps += 1
 
     def write_assertion(
         self,
@@ -307,18 +311,19 @@ class ArtifactStore:
             expected=expected,
             actual=actual,
             message=message,
-            timestamp=timestamp or datetime.now(UTC),
+            timestamp=timestamp or datetime.now(timezone.utc),
         )
 
-        if self._assertions_writer is not None:
-            self._assertions_writer.write(record)
+        with self._write_lock:
+            if self._assertions_writer is not None:
+                self._assertions_writer.write(record)
 
-        # Update tracking
-        self._total_assertions += 1
-        if passed:
-            self._assertions_passed += 1
-        else:
-            self._assertions_failed += 1
+            # Update tracking
+            self._total_assertions += 1
+            if passed:
+                self._assertions_passed += 1
+            else:
+                self._assertions_failed += 1
 
     def write_instance_artifact(
         self,
@@ -376,7 +381,7 @@ class ArtifactStore:
             self._assertions_writer = None
 
         # Calculate duration
-        completed_at = datetime.now(UTC)
+        completed_at = datetime.now(timezone.utc)
         duration_ms = 0.0
         if self._started_at is not None:
             duration_ms = (completed_at - self._started_at).total_seconds() * 1000

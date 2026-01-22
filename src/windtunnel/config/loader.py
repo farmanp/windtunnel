@@ -92,7 +92,9 @@ def load_scenario(path: Path) -> Scenario:
         raise ConfigLoadError("Scenario file is empty", path)
 
     try:
-        return Scenario.model_validate(data)
+        scenario = Scenario.model_validate(data)
+        scenario._source_path = path
+        return scenario
     except ValidationError as e:
         errors = []
         for error in e.errors():

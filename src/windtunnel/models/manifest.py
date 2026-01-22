@@ -1,6 +1,6 @@
 """Run manifest model for artifact storage metadata."""
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 def _utc_now() -> datetime:
     """Return the current UTC time as a timezone-aware datetime."""
-    return datetime.now(UTC)
+    return datetime.now(timezone.utc)
 
 
 class RunConfig(BaseModel):

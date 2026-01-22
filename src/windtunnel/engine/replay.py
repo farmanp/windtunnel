@@ -181,7 +181,9 @@ class ReplayEngine:
                         data = json.load(f)
                     else:
                         data = yaml.safe_load(f)
-                return Scenario(**data)
+                scenario = Scenario.model_validate(data)
+                scenario._source_path = scenario_path
+                return scenario
 
         raise ScenarioNotFoundError(scenario_id, self.scenarios_dir)
 
@@ -348,6 +350,8 @@ class ReplayEngine:
         # Create context from instance data
         ctx = self.create_context_from_instance(instance_data)
         context_dict = ctx.to_dict()
+        if scenario.source_path is not None:
+            context_dict["_scenario_path"] = scenario.source_path
 
         # Add correlation_id to default headers for tracing
         if self.sut_config is not None:
