@@ -1,12 +1,76 @@
 """HTML report generator for Turbulence runs."""
 
 import json
-from collections import Counter
+import math
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, PackageLoader, select_autoescape
+
+
+def calculate_percentile(data: list[float], percentile: int) -> float:
+    """Calculate the Nth percentile of a list of values."""
+    if not data:
+        return 0.0
+    data.sort()
+    k = (len(data) - 1) * (percentile / 100.0)
+    f = math.floor(k)
+    c = math.ceil(k)
+    if f == c:
+        return data[int(k)]
+    d0 = data[int(f)]
+    d1 = data[int(c)]
+    return d0 + (d1 - d0) * (k - f)
+
+
+@dataclass
+class ActionStats:
+    """Statistics for a single action type within a scenario."""
+
+    name: str
+    count: int = 0
+    latencies: list[float] = field(default_factory=list)
+    fail_count: int = 0
+
+    @property
+    def p50(self) -> float:
+        return calculate_percentile(self.latencies, 50)
+
+    @property
+    def p95(self) -> float:
+        return calculate_percentile(self.latencies, 95)
+
+    @property
+    def p99(self) -> float:
+        return calculate_percentile(self.latencies, 99)
+
+    @property
+    def avg_latency(self) -> float:
+        return sum(self.latencies) / len(self.latencies) if self.latencies else 0.0
+
+
+@dataclass
+class ServiceStats:
+    """Statistics for a service across all scenarios."""
+
+    name: str
+    request_count: int = 0
+    fail_count: int = 0
+    latencies: list[float] = field(default_factory=list)
+
+    @property
+    def p50(self) -> float:
+        return calculate_percentile(self.latencies, 50)
+
+    @property
+    def p95(self) -> float:
+        return calculate_percentile(self.latencies, 95)
+
+    @property
+    def p99(self) -> float:
+        return calculate_percentile(self.latencies, 99)
 
 
 @dataclass
@@ -16,6 +80,7 @@ class ScenarioStats:
     name: str
     pass_count: int = 0
     fail_count: int = 0
+    actions: dict[str, ActionStats] = field(default_factory=dict)
 
     @property
     def total(self) -> int:
@@ -28,6 +93,13 @@ class ScenarioStats:
         if self.total == 0:
             return 0.0
         return (self.pass_count / self.total) * 100
+    
+    @property
+    def actions_list(self) -> list[ActionStats]:
+        """Return actions sorted by name? Or just list."""
+        # Maybe sorted by order of appearance would be better but we don't track order here.
+        # Sorted by name for consistency.
+        return sorted(self.actions.values(), key=lambda a: a.name)
 
 
 @dataclass
@@ -44,6 +116,8 @@ class ReportData:
     scenarios: dict[str, ScenarioStats] = field(default_factory=dict)
     failing_assertions: Counter[str] = field(default_factory=Counter)
     failures_by_service: Counter[str] = field(default_factory=Counter)
+    services: dict[str, ServiceStats] = field(default_factory=dict)
+    error_categories: Counter[str] = field(default_factory=Counter)
 
     @property
     def pass_rate(self) -> float:
@@ -70,6 +144,16 @@ class ReportData:
     def services_by_failure_count(self) -> list[tuple[str, int]]:
         """Return services sorted by failure count (most failures first)."""
         return self.failures_by_service.most_common()
+    
+    @property
+    def services_stats_list(self) -> list[ServiceStats]:
+        """Return service stats sorted by request count."""
+        return sorted(self.services.values(), key=lambda s: s.request_count, reverse=True)
+
+    @property
+    def error_categories_list(self) -> list[tuple[str, int]]:
+        """Return error categories sorted by count."""
+        return self.error_categories.most_common()
 
 
 class HTMLReportGenerator:
@@ -135,6 +219,7 @@ class HTMLReportGenerator:
         manifest = self._load_manifest()
         summary = self._load_summary()
         instances = self._load_jsonl("instances.jsonl")
+        steps = self._load_jsonl("steps.jsonl")
         assertions = self._load_jsonl("assertions.jsonl")
 
         # Initialize report data
@@ -145,11 +230,17 @@ class HTMLReportGenerator:
             duration_ms=summary.get("duration_ms", 0.0),
         )
 
+        # Map instance_id to scenario_id for step aggregation
+        instance_scenario_map: dict[str, str] = {}
+
         # Process instances for overall and per-scenario stats
         for instance in instances:
             report_data.total_instances += 1
             passed = instance.get("passed", False)
-            scenario = instance.get("scenario", "unknown")
+            scenario = instance.get("scenario_id", "unknown")
+            instance_id = instance.get("instance_id")
+            if instance_id:
+                instance_scenario_map[instance_id] = scenario
 
             if scenario not in report_data.scenarios:
                 report_data.scenarios[scenario] = ScenarioStats(name=scenario)
@@ -160,15 +251,69 @@ class HTMLReportGenerator:
             else:
                 report_data.fail_count += 1
                 report_data.scenarios[scenario].fail_count += 1
+            
+            # Error categorization from instance-level errors
+            if not passed and instance.get("error"):
+                error_msg = instance["error"]
+                # Simplify error message for categorization (e.g. "HTTP 500..." -> "HTTP 500")
+                category = self._categorize_error(error_msg)
+                report_data.error_categories[category] += 1
+
+        # Process steps for latency and action stats
+        for step in steps:
+            instance_id = step.get("instance_id")
+            scenario = instance_scenario_map.get(instance_id, "unknown")
+            if scenario not in report_data.scenarios:
+                report_data.scenarios[scenario] = ScenarioStats(name=scenario)
+            
+            step_name = step.get("step_name", "unknown")
+            obs = step.get("observation", {})
+            latency = obs.get("latency_ms", 0.0)
+            service = obs.get("service")
+            
+            # Update ActionStats
+            scenario_stats = report_data.scenarios[scenario]
+            if step_name not in scenario_stats.actions:
+                scenario_stats.actions[step_name] = ActionStats(name=step_name)
+            
+            action_stats = scenario_stats.actions[step_name]
+            action_stats.count += 1
+            action_stats.latencies.append(latency)
+            if not obs.get("ok", False):
+                action_stats.fail_count += 1
+                # Collect errors from observations
+                for err in obs.get("errors", []):
+                    category = self._categorize_error(err)
+                    report_data.error_categories[category] += 1
+
+            # Update ServiceStats
+            if service:
+                if service not in report_data.services:
+                    report_data.services[service] = ServiceStats(name=service)
+                
+                service_stats = report_data.services[service]
+                service_stats.request_count += 1
+                service_stats.latencies.append(latency)
+                if not obs.get("ok", False):
+                    service_stats.fail_count += 1
 
         # Process assertions for failure analysis
         for assertion in assertions:
             if not assertion.get("passed", True):
-                name = assertion.get("name", "unknown")
-                service = assertion.get("service", "unknown")
-
+                name = assertion.get("assertion_name", "unknown")
+                # assertions.jsonl doesn't have 'service', it relies on implicit knowledge or manual mapping?
+                # The existing code tried to get 'service' from assertion dict.
+                # If we want service failures from assertions, we need 'service' in assertion record.
+                # Since we can't easily add it now without changing AssertAction execution, 
+                # we'll stick to what we have or just use step failures for service stats.
+                # report_data.failures_by_service[service] += 1  <-- Removing this as it's unreliable from assertions
+                
                 report_data.failing_assertions[name] += 1
-                report_data.failures_by_service[service] += 1
+
+        # Fill failures_by_service from ServiceStats instead
+        for service_name, stats in report_data.services.items():
+            if stats.fail_count > 0:
+                report_data.failures_by_service[service_name] = stats.fail_count
 
         # Use summary data if instances.jsonl is empty but summary exists
         if report_data.total_instances == 0 and summary:
@@ -179,6 +324,22 @@ class HTMLReportGenerator:
             )
 
         return report_data
+
+    def _categorize_error(self, error_msg: str) -> str:
+        """Categorize an error message into a high-level bucket."""
+        if "HTTP 5" in error_msg:
+            return "5xx Server Error"
+        if "HTTP 4" in error_msg:
+            return "4xx Client Error"
+        if "timeout" in error_msg.lower():
+            return "Timeout"
+        if "connection" in error_msg.lower():
+            return "Connection Error"
+        if "validation" in error_msg.lower() or "schema" in error_msg.lower():
+            return "Validation Error"
+        if "jsonpath" in error_msg.lower():
+            return "Extraction Error"
+        return "Other Error"
 
     def generate(self, output_path: Path | None = None) -> Path:
         """Generate the HTML report.
@@ -208,6 +369,8 @@ class HTMLReportGenerator:
             scenarios=report_data.scenarios_sorted_by_failure,
             failing_assertions=report_data.top_failing_assertions,
             failures_by_service=report_data.services_by_failure_count,
+            services=report_data.services_stats_list,
+            error_categories=report_data.error_categories_list,
         )
 
         output_path.write_text(html_content)

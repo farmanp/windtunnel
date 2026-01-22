@@ -148,9 +148,9 @@ turbulence serve --port 8000
 - Environment variable support
 - Environment profiles
 - Retry policies
+- Enhanced report aggregations
 
 **Upcoming (Batch 6-7, 9-10):**
-- Enhanced report aggregations
 - CI gating with thresholds
 - Deterministic variation engine
 - SQLite backend option

@@ -235,6 +235,7 @@ class WaitActionRunner(BaseActionRunner):
             body=last_body,
             errors=errors,
             action_name=self.action.name,
+            service=self.action.service,
             attempts=attempts,
             total_attempts=len(attempts),
             timed_out=timed_out,

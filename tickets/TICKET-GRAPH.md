@@ -173,7 +173,7 @@ Execute each batch to completion before starting the next. Within a batch, all t
 ### Batch 6: Polish & CI
 | Ticket | Title | Dependencies | Estimated Complexity | Status |
 |--------|-------|--------------|---------------------|--------|
-| FEAT-015 | Enhanced report aggregations | FEAT-009, FEAT-011 | Medium | TODO |
+| FEAT-015 | Enhanced report aggregations | FEAT-009, FEAT-011 | Medium | DONE |
 | FEAT-016 | CI gating with fail-on thresholds | FEAT-011 | Low | TODO |
 | FEAT-017 | Deterministic variation engine | FEAT-007 | Medium | TODO |
 
@@ -314,5 +314,5 @@ INFRA-001 → FEAT-002 → FEAT-004 → FEAT-007 → FEAT-008 → FEAT-011 → F
 
 ## AI Agent Status
 
-Turbulence core and Web UI foundation are stable. Environment features (Vars, Profiles, Retries) are implemented.
-**Current Frontier:** Polish & CI (Batch 6), Advanced Engine (Batch 7), Web UI Enhancements (Batch 9), and Enhanced Reports (FEAT-015).
+Turbulence core and Web UI foundation are stable. Reporting and environments are enhanced.
+**Current Frontier:** Polish & CI (Batch 6), Advanced Engine (Batch 7), Web UI Enhancements (Batch 9), and CI Gating (FEAT-016).

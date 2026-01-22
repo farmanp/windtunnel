@@ -43,6 +43,10 @@ class Observation(BaseModel):
         default="",
         description="Name of the action that produced this observation",
     )
+    service: str | None = Field(
+        default=None,
+        description="Name of the service targeted by this action",
+    )
     turbulence: dict[str, Any] | None = Field(
         default=None,
         description="Injected turbulence details, if any",

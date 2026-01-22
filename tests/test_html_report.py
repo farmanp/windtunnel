@@ -6,7 +6,29 @@ from pathlib import Path
 import pytest
 
 from turbulence.report import HTMLReportGenerator
-from turbulence.report.html import ReportData, ScenarioStats
+from turbulence.report.html import ActionStats, ReportData, ScenarioStats, calculate_percentile
+
+
+class TestPercentiles:
+    """Tests for percentile calculation."""
+
+    def test_calculate_percentile_empty(self) -> None:
+        assert calculate_percentile([], 50) == 0.0
+
+    def test_calculate_percentile_exact(self) -> None:
+        # [1, 2, 3, 4, 5], 50th percentile is 3
+        data = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert calculate_percentile(data, 50) == 3.0
+
+    def test_calculate_percentile_interpolated(self) -> None:
+        # [1, 2, 3, 4], 50th percentile is 2.5
+        data = [1.0, 2.0, 3.0, 4.0]
+        assert calculate_percentile(data, 50) == 2.5
+
+    def test_calculate_percentile_edges(self) -> None:
+        data = [1.0, 10.0]
+        assert calculate_percentile(data, 0) == 1.0
+        assert calculate_percentile(data, 100) == 10.0
 
 
 class TestScenarioStats:
@@ -124,40 +146,58 @@ class TestHTMLReportGenerator:
 
         # Create instances.jsonl
         instances = [
-            {"instance_id": "inst_001", "scenario": "checkout", "passed": True},
-            {"instance_id": "inst_002", "scenario": "checkout", "passed": True},
-            {"instance_id": "inst_003", "scenario": "checkout", "passed": False},
-            {"instance_id": "inst_004", "scenario": "refund", "passed": True},
-            {"instance_id": "inst_005", "scenario": "refund", "passed": False},
+            {"instance_id": "inst_001", "scenario_id": "checkout", "passed": True},
+            {"instance_id": "inst_002", "scenario_id": "checkout", "passed": True},
+            {"instance_id": "inst_003", "scenario_id": "checkout", "passed": False},
+            {"instance_id": "inst_004", "scenario_id": "refund", "passed": True},
+            {"instance_id": "inst_005", "scenario_id": "refund", "passed": False},
         ]
         with (run_dir / "instances.jsonl").open("w") as f:
             for instance in instances:
                 f.write(json.dumps(instance) + "\n")
 
+        # Create steps.jsonl
+        steps = [
+            {
+                "instance_id": "inst_001", 
+                "step_name": "login", 
+                "observation": {"ok": True, "latency_ms": 100, "service": "auth"}
+            },
+            {
+                "instance_id": "inst_001", 
+                "step_name": "get_cart", 
+                "observation": {"ok": True, "latency_ms": 50, "service": "cart"}
+            },
+            {
+                "instance_id": "inst_003", 
+                "step_name": "login", 
+                "observation": {"ok": False, "latency_ms": 5000, "errors": ["Timeout"], "service": "auth"}
+            },
+        ]
+        with (run_dir / "steps.jsonl").open("w") as f:
+            for step in steps:
+                f.write(json.dumps(step) + "\n")
+
         # Create assertions.jsonl
         assertions = [
             {
-                "name": "payment_captured",
+                "assertion_name": "payment_captured",
                 "passed": False,
-                "service": "payments",
                 "instance_id": "inst_003",
             },
             {
-                "name": "payment_captured",
+                "assertion_name": "payment_captured",
                 "passed": False,
-                "service": "payments",
                 "instance_id": "inst_005",
             },
             {
-                "name": "refund_processed",
+                "assertion_name": "refund_processed",
                 "passed": False,
-                "service": "api",
                 "instance_id": "inst_005",
             },
             {
-                "name": "order_confirmed",
+                "assertion_name": "order_confirmed",
                 "passed": True,
-                "service": "api",
                 "instance_id": "inst_001",
             },
         ]
@@ -186,7 +226,9 @@ class TestHTMLReportGenerator:
         assert result_path.parent == populated_run_dir
 
     def test_generate_custom_output_path(
-        self, populated_run_dir: Path, tmp_path: Path
+        self,
+        populated_run_dir: Path,
+        tmp_path: Path,
     ) -> None:
         """Report should be written to custom output path."""
         custom_path = tmp_path / "custom_report.html"
@@ -246,8 +288,10 @@ class TestHTMLReportGenerator:
         result_path = generator.generate()
 
         content = result_path.read_text()
-        assert "payments" in content
-        assert "api" in content
+        # "auth" service failed in steps.jsonl
+        assert "auth" in content
+        # "cart" service passed
+        assert "cart" in content
 
     def test_report_is_self_contained(self, populated_run_dir: Path) -> None:
         """Report HTML should not reference external resources."""
@@ -324,16 +368,16 @@ class TestHTMLReportGenerator:
         # Create instances with different pass rates
         instances = [
             # checkout: 2/2 = 100% pass
-            {"scenario": "checkout", "passed": True},
-            {"scenario": "checkout", "passed": True},
+            {"scenario_id": "checkout", "passed": True},
+            {"scenario_id": "checkout", "passed": True},
             # refund: 1/2 = 50% pass (worst)
-            {"scenario": "refund", "passed": True},
-            {"scenario": "refund", "passed": False},
+            {"scenario_id": "refund", "passed": True},
+            {"scenario_id": "refund", "passed": False},
             # login: 3/4 = 75% pass
-            {"scenario": "login", "passed": True},
-            {"scenario": "login", "passed": True},
-            {"scenario": "login", "passed": True},
-            {"scenario": "login", "passed": False},
+            {"scenario_id": "login", "passed": True},
+            {"scenario_id": "login", "passed": True},
+            {"scenario_id": "login", "passed": True},
+            {"scenario_id": "login", "passed": False},
         ]
         with (run_dir / "instances.jsonl").open("w") as f:
             for instance in instances:
@@ -358,9 +402,9 @@ class TestHTMLReportGenerator:
         (run_dir / "manifest.json").write_text(json.dumps(manifest))
 
         assertions = [
-            {"name": "payment_captured", "passed": False, "service": "payments"},
-            {"name": "payment_captured", "passed": False, "service": "payments"},
-            {"name": "payment_captured", "passed": False, "service": "payments"},
+            {"assertion_name": "payment_captured", "passed": False},
+            {"assertion_name": "payment_captured", "passed": False},
+            {"assertion_name": "payment_captured", "passed": False},
         ]
         with (run_dir / "assertions.jsonl").open("w") as f:
             for assertion in assertions:

@@ -270,40 +270,110 @@
         <div class="section">
             <h2>Pass Rate by Scenario</h2>
             {% if scenarios %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Scenario</th>
-                        <th>Pass Rate</th>
-                        <th>Passed</th>
-                        <th>Failed</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for scenario in scenarios %}
-                    <tr>
-                        <td><strong>{{ scenario.name }}</strong></td>
-                        <td>
-                            <span class="pass-rate {% if scenario.pass_rate >= 95 %}high{% elif scenario.pass_rate >= 80 %}medium{% else %}low{% endif %}">
-                                {{ "%.1f"|format(scenario.pass_rate) }}%
-                            </span>
-                            <div class="progress-bar">
-                                <div class="fill {% if scenario.pass_rate >= 95 %}high{% elif scenario.pass_rate >= 80 %}medium{% else %}low{% endif %}" style="width: {{ scenario.pass_rate }}%"></div>
-                            </div>
-                        </td>
-                        <td>{{ scenario.pass_count }}</td>
-                        <td>{{ scenario.fail_count }}</td>
-                        <td>{{ scenario.total }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            {% for scenario in scenarios %}
+            <div style="margin-bottom: 32px;">
+                <h3>{{ scenario.name }}</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center;">
+                        <span class="pass-rate {% if scenario.pass_rate >= 95 %}high{% elif scenario.pass_rate >= 80 %}medium{% else %}low{% endif %}" style="margin-right: 12px;">
+                            {{ "%.1f"|format(scenario.pass_rate) }}% Pass
+                        </span>
+                        <span style="font-size: 14px; color: #666;">
+                            {{ scenario.pass_count }} passed, {{ scenario.fail_count }} failed
+                        </span>
+                    </div>
+                    <span style="font-size: 14px; color: #666;">{{ scenario.total }} instances</span>
+                </div>
+                
+                {% if scenario.actions %}
+                <table style="font-size: 13px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;">Action</th>
+                            <th>Count</th>
+                            <th>Failures</th>
+                            <th>Avg (ms)</th>
+                            <th>p50 (ms)</th>
+                            <th>p95 (ms)</th>
+                            <th>p99 (ms)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for action in scenario.actions_list %}
+                        <tr>
+                            <td>{{ action.name }}</td>
+                            <td>{{ action.count }}</td>
+                            <td>{% if action.fail_count > 0 %}<span class="count-badge fail">{{ action.fail_count }}</span>{% else %}0{% endif %}</td>
+                            <td>{{ "%.1f"|format(action.avg_latency) }}</td>
+                            <td>{{ "%.1f"|format(action.p50) }}</td>
+                            <td>{{ "%.1f"|format(action.p95) }}</td>
+                            <td>{{ "%.1f"|format(action.p99) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+            </div>
+            {% endfor %}
             {% else %}
             <div class="empty-state">
                 <p>No scenario data available</p>
             </div>
             {% endif %}
+        </div>
+
+        <div class="summary-cards" style="grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <div class="section" style="margin-bottom: 0;">
+                <h2>Service Performance</h2>
+                {% if services %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Requests</th>
+                            <th>Errors</th>
+                            <th>p95 Latency</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for service in services %}
+                        <tr>
+                            <td><strong>{{ service.name }}</strong></td>
+                            <td>{{ service.request_count }}</td>
+                            <td>{% if service.fail_count > 0 %}<span class="count-badge fail">{{ service.fail_count }}</span>{% else %}0{% endif %}</td>
+                            <td>{{ "%.1f"|format(service.p95) }} ms</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state"><p>No service data recorded</p></div>
+                {% endif %}
+            </div>
+
+            <div class="section" style="margin-bottom: 0;">
+                <h2>Error Categories</h2>
+                {% if error_categories %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category, count in error_categories %}
+                        <tr>
+                            <td>{{ category }}</td>
+                            <td><span class="count-badge fail">{{ count }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state"><p>No errors recorded</p></div>
+                {% endif %}
+            </div>
         </div>
 
         <div class="section">
@@ -328,32 +398,6 @@
             {% else %}
             <div class="empty-state">
                 <p>No assertion failures recorded</p>
-            </div>
-            {% endif %}
-        </div>
-
-        <div class="section">
-            <h2>Failures by Service</h2>
-            {% if failures_by_service %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Service</th>
-                        <th>Failure Count</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for service, count in failures_by_service %}
-                    <tr>
-                        <td><strong>{{ service }}</strong></td>
-                        <td><span class="count-badge fail">{{ count }}</span></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="empty-state">
-                <p>No service failures recorded</p>
             </div>
             {% endif %}
         </div>
