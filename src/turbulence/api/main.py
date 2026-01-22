@@ -10,7 +10,9 @@ from turbulence.api.routes.runs import router as runs_router
 from turbulence.api.routes.stream import router as stream_router
 
 
-def create_app(runs_dir: Path = Path("runs"), static_dir: Path | None = None) -> FastAPI:
+def create_app(
+    runs_dir: Path = Path("runs"), static_dir: Path | None = None
+) -> FastAPI:
     """Create and configure the FastAPI application.
 
     Args:

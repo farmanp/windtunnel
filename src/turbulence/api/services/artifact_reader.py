@@ -317,31 +317,36 @@ class ArtifactReaderService:
                         data = json.loads(line)
                         total += 1
                         total_duration += data.get("duration_ms", 0)
-                        
+
                         error_msg = data.get("error")
                         if error_msg:
                             errors += 1
-                            failure_messages[error_msg] = failure_messages.get(error_msg, 0) + 1
+                            failure_messages[error_msg] = (
+                                failure_messages.get(error_msg, 0) + 1
+                            )
                         elif not data.get("passed"):
                             failed += 1
-                            # For failed instances, we might want to look at the last failed step
-                            # but for now we'll just group by scenario if no error msg
-                            # This is a simplification
+                            # Group by scenario if no error msg
                             msg = f"Failed: {data.get('scenario_id')}"
                             failure_messages[msg] = failure_messages.get(msg, 0) + 1
                         else:
                             passed += 1
                     except json.JSONDecodeError:
                         continue
-                
+
                 # Convert failure messages to sorted patterns
                 failures = []
-                for msg, count in sorted(failure_messages.items(), key=lambda x: x[1], reverse=True):
-                    failures.append(FailurePattern(
-                        message=msg,
-                        count=count,
-                        percentage=(count / total * 100) if total > 0 else 0
-                    ))
+                sorted_failures = sorted(
+                    failure_messages.items(), key=lambda x: x[1], reverse=True
+                )
+                for msg, count in sorted_failures:
+                    failures.append(
+                        FailurePattern(
+                            message=msg,
+                            count=count,
+                            percentage=(count / total * 100) if total > 0 else 0,
+                        )
+                    )
                 # Top 5 failures
                 top_failures = failures[:5]
 

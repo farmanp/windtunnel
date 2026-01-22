@@ -209,9 +209,9 @@ def _validate_expression(expression: str) -> None:
             "body",
             "headers",
             "context",
-                *ALLOWED_FUNCTIONS,
-            }
-        )
+            *ALLOWED_FUNCTIONS,
+        }
+    )
     validator.visit(tree)
 
 
@@ -283,9 +283,7 @@ class _ExpressionValidator(ast.NodeVisitor):
 
     def visit_Attribute(self, node: ast.Attribute) -> Any:
         if node.attr.startswith("__") or node.attr not in ALLOWED_ATTRIBUTES:
-            raise ExpressionSecurityError(
-                f"Attribute access not allowed: {node.attr}"
-            )
+            raise ExpressionSecurityError(f"Attribute access not allowed: {node.attr}")
         self.visit(node.value)
         return None
 

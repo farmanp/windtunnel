@@ -55,7 +55,7 @@ def serve(
             "[red]Error: uvicorn is required for the serve command.[/red]\n"
             "Install it with: pip install uvicorn"
         )
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from None
 
     from turbulence.api.main import create_app
 

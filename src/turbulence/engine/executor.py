@@ -222,9 +222,7 @@ class ParallelExecutor:
             # Create tasks for all instances
             tasks = []
             for i in range(total_instances):
-                task = asyncio.create_task(
-                    self._execute_instance(i, workflow_executor)
-                )
+                task = asyncio.create_task(self._execute_instance(i, workflow_executor))
                 tasks.append(task)
 
             # Wait for all tasks to complete

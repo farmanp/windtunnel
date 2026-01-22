@@ -217,8 +217,7 @@ class WaitActionRunner(BaseActionRunner):
             if sleep_time <= 0:
                 timed_out = True
                 errors.append(
-                    f"Timeout after {elapsed_seconds:.1f}s "
-                    f"({attempt_number} attempts)"
+                    f"Timeout after {elapsed_seconds:.1f}s ({attempt_number} attempts)"
                 )
                 break
 

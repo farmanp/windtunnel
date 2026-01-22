@@ -34,8 +34,8 @@ from turbulence.engine.template import TemplateEngine
 from turbulence.models.assertion_result import AssertionResult
 from turbulence.models.manifest import RunConfig
 from turbulence.models.observation import Observation
-from turbulence.storage.artifact import ArtifactStore
 from turbulence.pressure.engine import TurbulenceEngine
+from turbulence.storage.artifact import ArtifactStore
 
 console = Console()
 

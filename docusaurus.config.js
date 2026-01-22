@@ -8,13 +8,13 @@ const darkCodeTheme = themes.dracula;
 const config = {
   title: "Turbulence",
   tagline: "High-performance workflow simulation and testing framework",
-  url: "http://localhost",
-  baseUrl: "/",
+  url: "https://farmanp.github.io",
+  baseUrl: "/turbulence/docs/",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
   favicon: "img/turbulence-logo.svg",
 
-  organizationName: "turbulence",
+  organizationName: "farmanp",
   projectName: "turbulence",
 
   presets: [

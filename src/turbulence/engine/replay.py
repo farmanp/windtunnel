@@ -41,9 +41,7 @@ class ScenarioNotFoundError(Exception):
     def __init__(self, scenario_id: str, scenarios_path: Path) -> None:
         self.scenario_id = scenario_id
         self.scenarios_path = scenarios_path
-        super().__init__(
-            f"Scenario '{scenario_id}' not found at {scenarios_path}"
-        )
+        super().__init__(f"Scenario '{scenario_id}' not found at {scenarios_path}")
 
 
 @dataclass

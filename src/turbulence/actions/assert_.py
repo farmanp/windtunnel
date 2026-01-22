@@ -540,8 +540,7 @@ class AssertActionRunner:
             passed=False,
             actual=actual,
             message=(
-                f"No comparison specified for path '{path}' "
-                "(need equals or contains)"
+                f"No comparison specified for path '{path}' (need equals or contains)"
             ),
             path=path,
         )
