@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { MetricCard } from '@/components/MetricCard';
 import { SkeletonRow, SkeletonCard } from '@/components/Skeleton';
+import { ProgressBar } from '@/components/ProgressBar';
+import { FailureLink } from '@/components/FailureLink';
 import { useRunStream } from '@/hooks/useRunStream';
 
 type FilterType = 'all' | 'passed' | 'failed' | 'errors';
@@ -43,9 +45,16 @@ interface RunDetail {
 export function RunDetailPage() {
     const { runId } = useParams<{ runId: string }>();
     const [filter, setFilter] = useState<FilterType>('all');
+    const [showAllFailures, setShowAllFailures] = useState(false);
 
-    // Real-time streaming
-    const { status: streamStatus, reconnect } = useRunStream(runId || '');
+    // Real-time streaming with live stats
+    const {
+        status: streamStatus,
+        liveStats,
+        failures: liveFailures,
+        isComplete,
+        reconnect
+    } = useRunStream(runId || '');
 
     const { data: run, isLoading: runLoading } = useQuery<RunDetail>({
         queryKey: ['runs', runId],
@@ -66,9 +75,39 @@ export function RunDetailPage() {
         },
     });
 
+    // Determine if this is an active run
+    const isRunning = run?.completed_at === null;
+
+    // Use live stats if running, otherwise use fetched stats
+    const displayStats = useMemo(() => {
+        if (isRunning && liveStats.completed > 0) {
+            return {
+                total: run?.stats.total ?? 0,
+                passed: liveStats.passed,
+                failed: liveStats.failed,
+                errors: liveStats.errors,
+                completed: liveStats.completed,
+                passRate: liveStats.passRate,
+            };
+        }
+        return {
+            total: run?.stats.total ?? 0,
+            passed: run?.stats.passed ?? 0,
+            failed: run?.stats.failed ?? 0,
+            errors: run?.stats.errors ?? 0,
+            completed: (run?.stats.passed ?? 0) + (run?.stats.failed ?? 0),
+            passRate: run?.stats.pass_rate ?? 0,
+        };
+    }, [isRunning, liveStats, run]);
+
+    // Limit displayed live failures
+    const displayedFailures = showAllFailures
+        ? liveFailures
+        : liveFailures.slice(0, 5);
+
     const passRateVariant =
-        (run?.stats.pass_rate ?? 0) >= 95 ? 'success' :
-            (run?.stats.pass_rate ?? 0) >= 80 ? 'warning' :
+        displayStats.passRate >= 95 ? 'success' :
+            displayStats.passRate >= 80 ? 'warning' :
                 'failure';
 
     return (
@@ -80,8 +119,8 @@ export function RunDetailPage() {
                 <span className="text-slate-300">{runId}</span>
             </nav>
 
-            {/* Header */}
-            <div className="flex flex-col gap-2">
+            {/* Header with Live Progress */}
+            <div className="space-y-6">
                 <div className="flex items-center gap-4">
                     <h1 className="text-4xl font-bold tracking-tight text-white glow-cyan">
                         {runId}
@@ -104,7 +143,18 @@ export function RunDetailPage() {
                             }`} />
                         {streamStatus === 'connected' ? 'Live Stream' : streamStatus === 'connecting' ? 'Connecting...' : 'Reconnect'}
                     </button>
+
+                    {/* Run completion indicator */}
+                    {isComplete && (
+                        <span className="px-3 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Completed
+                        </span>
+                    )}
                 </div>
+
                 {run && (
                     <p className="text-sm font-medium text-slate-400">
                         <span className="text-slate-600 uppercase text-[10px] font-black tracking-widest mr-2">System Under Test</span>
@@ -113,46 +163,100 @@ export function RunDetailPage() {
                         <span className="text-slate-400 italic">{run.scenarios.join(' • ')}</span>
                     </p>
                 )}
+
+                {/* Live Progress Bar - Only show for active runs */}
+                {isRunning && (
+                    <div className="glass rounded-2xl p-6">
+                        <ProgressBar
+                            total={displayStats.total}
+                            completed={displayStats.completed}
+                            passed={displayStats.passed}
+                            failed={displayStats.failed}
+                            isConnecting={streamStatus === 'connecting'}
+                            showCounts={true}
+                            size="md"
+                        />
+                    </div>
+                )}
             </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-4 gap-6">
-                {runLoading ? (
-                    <>
-                        <SkeletonCard />
-                        <SkeletonCard />
-                        <SkeletonCard />
-                        <SkeletonCard />
-                    </>
-                ) : run && (
-                    <>
-                        <MetricCard
-                            label="Success Delta"
-                            value={`${run.stats.pass_rate.toFixed(1)}%`}
-                            variant={passRateVariant}
-                            sublabel="Workflow completion integrity"
-                            tooltip="Percentage of instances that reached terminal success. 100% indicates zero regression."
-                        />
-                        <MetricCard
-                            label="Compute Time"
-                            value={formatDuration(run.stats.duration_ms)}
-                            sublabel="Total execution duration"
-                            tooltip="The cumulative time spent by all virtual agents in this execution graph."
-                        />
-                        <MetricCard
-                            label="Population"
-                            value={run.stats.total}
-                            sublabel={`${run.stats.passed} Passed • ${run.stats.failed} Failed`}
-                            tooltip="The total number of concurrent instances spawned for this session."
-                        />
-                        <MetricCard
-                            label="IO Errors"
-                            value={run.stats.errors}
-                            variant={run.stats.errors > 0 ? 'warning' : 'default'}
-                            sublabel="Network / Host exceptions"
-                            tooltip="Non-assertion failures. These represent infra stability issues rather than logic bugs."
-                        />
-                    </>
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-12 gap-6">
+                {/* Left: Metric Cards (3 cols each, taking 9 cols total when no live failures) */}
+                <div className={`${liveFailures.length > 0 && isRunning ? 'col-span-9' : 'col-span-12'}`}>
+                    <div className="grid grid-cols-4 gap-6">
+                        {runLoading ? (
+                            <>
+                                <SkeletonCard />
+                                <SkeletonCard />
+                                <SkeletonCard />
+                                <SkeletonCard />
+                            </>
+                        ) : run && (
+                            <>
+                                <MetricCard
+                                    label="Success Delta"
+                                    value={`${displayStats.passRate.toFixed(1)}%`}
+                                    variant={passRateVariant}
+                                    sublabel="Workflow completion integrity"
+                                    tooltip="Percentage of instances that reached terminal success. 100% indicates zero regression."
+                                />
+                                <MetricCard
+                                    label="Compute Time"
+                                    value={formatDuration(run.stats.duration_ms)}
+                                    sublabel="Total execution duration"
+                                    tooltip="The cumulative time spent by all virtual agents in this execution graph."
+                                />
+                                <MetricCard
+                                    label="Population"
+                                    value={displayStats.total}
+                                    sublabel={`${displayStats.passed} Passed • ${displayStats.failed} Failed`}
+                                    tooltip="The total number of concurrent instances spawned for this session."
+                                />
+                                <MetricCard
+                                    label="IO Errors"
+                                    value={displayStats.errors}
+                                    variant={displayStats.errors > 0 ? 'warning' : 'default'}
+                                    sublabel="Network / Host exceptions"
+                                    tooltip="Non-assertion failures. These represent infra stability issues rather than logic bugs."
+                                />
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* Right: Live Failures Sidebar - Only show for active runs with failures */}
+                {liveFailures.length > 0 && isRunning && (
+                    <div className="col-span-3 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-400 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                Live Failures
+                            </h3>
+                            <span className="text-[10px] font-bold text-slate-500">
+                                {liveFailures.length} total
+                            </span>
+                        </div>
+                        <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                            {displayedFailures.map((failure, index) => (
+                                <FailureLink
+                                    key={failure.instanceId}
+                                    runId={runId || ''}
+                                    instanceId={failure.instanceId}
+                                    scenarioId={failure.scenarioId}
+                                    isNew={index === 0 && liveFailures.length > 1}
+                                />
+                            ))}
+                        </div>
+                        {liveFailures.length > 5 && !showAllFailures && (
+                            <button
+                                onClick={() => setShowAllFailures(true)}
+                                className="w-full py-2 text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+                            >
+                                View All ({liveFailures.length - 5} more)
+                            </button>
+                        )}
+                    </div>
                 )}
             </div>
 
@@ -210,10 +314,10 @@ export function RunDetailPage() {
                                 {f}
                                 {run && (
                                     <span className={`ml-2 opacity-50 ${filter === f ? 'text-black' : ''}`}>
-                                        {f === 'all' ? run.stats.total :
-                                            f === 'passed' ? run.stats.passed :
-                                                f === 'failed' ? run.stats.failed :
-                                                    run.stats.errors}
+                                        {f === 'all' ? displayStats.total :
+                                            f === 'passed' ? displayStats.passed :
+                                                f === 'failed' ? displayStats.failed :
+                                                    displayStats.errors}
                                     </span>
                                 )}
                             </button>
