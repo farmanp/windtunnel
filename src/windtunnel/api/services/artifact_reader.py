@@ -19,6 +19,15 @@ class RunStats:
 
 
 @dataclass
+class FailurePattern:
+    """Represents a common failure pattern in a run."""
+
+    message: str
+    count: int
+    percentage: float
+
+
+@dataclass
 class RunSummary:
     """Summary information for a run."""
 
@@ -28,6 +37,7 @@ class RunSummary:
     started_at: datetime
     completed_at: datetime | None
     stats: RunStats
+    failures: list[FailurePattern] = None
 
 
 @dataclass
@@ -299,6 +309,7 @@ class ArtifactReaderService:
 
         if instances_path.exists():
             with instances_path.open() as f:
+                failure_messages: dict[str, int] = {}
                 for line in f:
                     if not line.strip():
                         continue
@@ -306,14 +317,33 @@ class ArtifactReaderService:
                         data = json.loads(line)
                         total += 1
                         total_duration += data.get("duration_ms", 0)
-                        if data.get("error"):
+                        
+                        error_msg = data.get("error")
+                        if error_msg:
                             errors += 1
-                        elif data.get("passed"):
-                            passed += 1
-                        else:
+                            failure_messages[error_msg] = failure_messages.get(error_msg, 0) + 1
+                        elif not data.get("passed"):
                             failed += 1
+                            # For failed instances, we might want to look at the last failed step
+                            # but for now we'll just group by scenario if no error msg
+                            # This is a simplification
+                            msg = f"Failed: {data.get('scenario_id')}"
+                            failure_messages[msg] = failure_messages.get(msg, 0) + 1
+                        else:
+                            passed += 1
                     except json.JSONDecodeError:
                         continue
+                
+                # Convert failure messages to sorted patterns
+                failures = []
+                for msg, count in sorted(failure_messages.items(), key=lambda x: x[1], reverse=True):
+                    failures.append(FailurePattern(
+                        message=msg,
+                        count=count,
+                        percentage=(count / total * 100) if total > 0 else 0
+                    ))
+                # Top 5 failures
+                top_failures = failures[:5]
 
         pass_rate = (passed / total * 100) if total > 0 else 0.0
 
@@ -341,4 +371,5 @@ class ArtifactReaderService:
             started_at=started_at,
             completed_at=completed_at,
             stats=stats,
+            failures=top_failures,
         )

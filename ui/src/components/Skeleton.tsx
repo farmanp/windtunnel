@@ -5,28 +5,31 @@ interface SkeletonProps {
 export function Skeleton({ className = '' }: SkeletonProps) {
     return (
         <div
-            className={`animate-pulse bg-[hsl(var(--color-bg-elevated))] rounded ${className}`}
+            className={`animate-pulse bg-white/[0.03] rounded-lg ${className}`}
         />
     );
 }
 
 export function SkeletonRow() {
     return (
-        <div className="flex items-center gap-4 p-4 border-b border-[hsl(var(--color-border))]">
+        <div className="grid grid-cols-5 gap-6 px-8 py-5 items-center">
             <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3 w-48" />
             <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-4 w-20" />
             <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-6 w-20 rounded-full" />
+            <div className="flex justify-end">
+                <Skeleton className="h-6 w-20 rounded-md" />
+            </div>
         </div>
     );
 }
 
 export function SkeletonCard() {
     return (
-        <div className="bg-[hsl(var(--color-bg-secondary))] rounded-xl p-5 border border-[hsl(var(--color-border))]">
-            <Skeleton className="h-4 w-20 mb-2" />
+        <div className="glass rounded-3xl p-6 border-white/5 shadow-xl">
+            <Skeleton className="h-3 w-16 mb-4" />
             <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-3 w-32 mt-4" />
         </div>
     );
 }

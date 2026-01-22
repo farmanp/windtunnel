@@ -1,9 +1,7 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Layout } from '@/components/Layout';
-import { RunListPage } from '@/pages/RunListPage';
-import { RunDetailPage } from '@/pages/RunDetailPage';
-import { InstanceTimelinePage } from '@/pages/InstanceTimelinePage';
+import { RunListPage, RunDetailPage, InstanceTimelinePage, ErrorPage, SystemPage } from '@/pages';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,6 +16,7 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <Layout />,
+    errorElement: <ErrorPage />,
     children: [
       {
         index: true,
@@ -30,6 +29,10 @@ const router = createBrowserRouter([
       {
         path: 'runs/:runId/instances/:instanceId',
         element: <InstanceTimelinePage />,
+      },
+      {
+        path: 'settings',
+        element: <SystemPage />,
       },
     ],
   },

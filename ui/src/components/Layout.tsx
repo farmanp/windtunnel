@@ -2,34 +2,48 @@ import { Outlet, NavLink } from 'react-router-dom';
 
 export function Layout() {
     return (
-        <div className="flex h-screen">
+        <div className="flex h-screen bg-[#05070a] text-slate-100 selection:bg-indigo-500/30">
             {/* Sidebar */}
-            <aside className="w-64 flex-shrink-0 bg-[hsl(var(--color-bg-secondary))] border-r border-[hsl(var(--color-border))]">
-                <div className="p-6">
+            <aside className="w-72 flex-shrink-0 border-r border-white/5 bg-[#0a0f18]/50 backdrop-blur-xl">
+                <div className="flex flex-col h-full p-6">
                     {/* Logo */}
-                    <div className="flex items-center gap-3 mb-8">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
+                    <div className="flex items-center gap-4 mb-10 group cursor-default">
+                        <div className="relative">
+                            <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-indigo-600 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                            <div className="relative w-11 h-11 rounded-xl bg-[#0f172a] border border-white/10 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                            </div>
                         </div>
                         <div>
-                            <h1 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">Windtunnel</h1>
-                            <p className="text-xs text-[hsl(var(--color-text-secondary))]">Workflow Testing</p>
+                            <h1 className="text-xl font-bold tracking-tight text-white glow-cyan">Windtunnel</h1>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-500/60">Stress Intelligence</p>
                         </div>
                     </div>
 
                     {/* Navigation */}
-                    <nav className="space-y-1">
-                        <NavItem to="/" icon={<RunsIcon />} label="Runs" />
-                        <NavItem to="/settings" icon={<SettingsIcon />} label="Settings" />
+                    <nav className="flex-1 space-y-2">
+                        <NavItem to="/" icon={<RunsIcon />} label="Executions" />
+                        <NavItem to="/settings" icon={<SettingsIcon />} label="System" />
                     </nav>
+
+                    {/* Footer / Status */}
+                    <div className="mt-auto pt-6 border-t border-white/5">
+                        <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/5 border border-white/5">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                            <span className="text-xs font-medium text-slate-400">Engine Online</span>
+                        </div>
+                    </div>
                 </div>
             </aside>
 
             {/* Main content */}
-            <main className="flex-1 overflow-auto bg-[hsl(var(--color-bg-primary))]">
-                <div className="p-8">
+            <main className="flex-1 overflow-auto relative">
+                {/* Background Glow */}
+                <div className="absolute top-0 left-1/4 w-1/2 h-1/2 bg-indigo-500/5 blur-[120px] pointer-events-none"></div>
+
+                <div className="relative p-10 max-w-7xl mx-auto">
                     <Outlet />
                 </div>
             </main>

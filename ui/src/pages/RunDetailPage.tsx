@@ -16,6 +16,12 @@ interface Instance {
     error: string | null;
 }
 
+interface Failure {
+    message: string;
+    count: number;
+    percentage: number;
+}
+
 interface RunDetail {
     id: string;
     sut_name: string;
@@ -30,6 +36,7 @@ interface RunDetail {
         pass_rate: number;
         duration_ms: number;
     };
+    failures: Failure[];
 }
 
 export function RunDetailPage() {
@@ -61,28 +68,38 @@ export function RunDetailPage() {
                 'failure';
 
     return (
-        <div>
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Breadcrumb */}
-            <nav className="text-sm text-[hsl(var(--color-text-secondary))] mb-4">
-                <Link to="/" className="hover:text-[hsl(var(--color-text-primary))]">Runs</Link>
-                <span className="mx-2">›</span>
-                <span className="text-[hsl(var(--color-text-primary))]">{runId}</span>
+            <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <Link to="/" className="hover:text-cyan-400 transition-colors">Executions</Link>
+                <span className="opacity-30">/</span>
+                <span className="text-slate-300">{runId}</span>
             </nav>
 
             {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-2xl font-semibold text-[hsl(var(--color-text-primary))]">
-                    {runId}
-                </h1>
+            <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-4">
+                    <h1 className="text-4xl font-bold tracking-tight text-white glow-cyan">
+                        {runId}
+                    </h1>
+                    {run && (
+                        <div className="px-3 py-1 rounded-md glass border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-widest">
+                            Live Artifact
+                        </div>
+                    )}
+                </div>
                 {run && (
-                    <p className="text-sm text-[hsl(var(--color-text-secondary))] mt-1">
-                        {run.sut_name} • {run.scenarios.join(', ')}
+                    <p className="text-sm font-medium text-slate-400">
+                        <span className="text-slate-600 uppercase text-[10px] font-black tracking-widest mr-2">System Under Test</span>
+                        <span className="text-slate-200">{run.sut_name}</span>
+                        <span className="mx-3 opacity-20">|</span>
+                        <span className="text-slate-400 italic">{run.scenarios.join(' • ')}</span>
                     </p>
                 )}
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-4 gap-6">
                 {runLoading ? (
                     <>
                         <SkeletonCard />
@@ -93,105 +110,156 @@ export function RunDetailPage() {
                 ) : run && (
                     <>
                         <MetricCard
-                            label="Pass Rate"
+                            label="Success Delta"
                             value={`${run.stats.pass_rate.toFixed(1)}%`}
                             variant={passRateVariant}
+                            sublabel="Workflow completion integrity"
+                            tooltip="Percentage of instances that reached terminal success. 100% indicates zero regression."
                         />
                         <MetricCard
-                            label="Duration"
+                            label="Compute Time"
                             value={formatDuration(run.stats.duration_ms)}
+                            sublabel="Total execution duration"
+                            tooltip="The cumulative time spent by all virtual agents in this execution graph."
                         />
                         <MetricCard
-                            label="Instances"
+                            label="Population"
                             value={run.stats.total}
-                            sublabel={`${run.stats.passed} passed, ${run.stats.failed} failed`}
+                            sublabel={`${run.stats.passed} Passed • ${run.stats.failed} Failed`}
+                            tooltip="The total number of concurrent instances spawned for this session."
                         />
                         <MetricCard
-                            label="Errors"
+                            label="IO Errors"
                             value={run.stats.errors}
                             variant={run.stats.errors > 0 ? 'warning' : 'default'}
+                            sublabel="Network / Host exceptions"
+                            tooltip="Non-assertion failures. These represent infra stability issues rather than logic bugs."
                         />
                     </>
                 )}
             </div>
 
-            {/* Filter Bar */}
-            <div className="flex gap-2 mb-4">
-                {(['all', 'passed', 'failed', 'errors'] as FilterType[]).map((f) => (
-                    <button
-                        key={f}
-                        onClick={() => setFilter(f)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === f
-                                ? 'bg-[hsl(var(--color-info))] text-white'
-                                : 'bg-[hsl(var(--color-bg-secondary))] text-[hsl(var(--color-text-secondary))] hover:bg-[hsl(var(--color-bg-elevated))]'
-                            }`}
-                    >
-                        {f.charAt(0).toUpperCase() + f.slice(1)}
-                        {run && (
-                            <span className="ml-2 opacity-70">
-                                {f === 'all' ? run.stats.total :
-                                    f === 'passed' ? run.stats.passed :
-                                        f === 'failed' ? run.stats.failed :
-                                            run.stats.errors}
-                            </span>
-                        )}
-                    </button>
-                ))}
-            </div>
-
-            {/* Instance Grid */}
-            <div className="bg-[hsl(var(--color-bg-secondary))] rounded-xl border border-[hsl(var(--color-border))] overflow-hidden">
-                {/* Table Header */}
-                <div className="grid grid-cols-5 gap-4 px-6 py-3 bg-[hsl(var(--color-bg-elevated))] border-b border-[hsl(var(--color-border))] text-xs font-medium text-[hsl(var(--color-text-secondary))] uppercase tracking-wider">
-                    <div>Instance ID</div>
-                    <div>Correlation ID</div>
-                    <div>Scenario</div>
-                    <div>Duration</div>
-                    <div>Status</div>
+            {/* Top Failures Section */}
+            {run && run.failures && run.failures.length > 0 && (
+                <div className="space-y-4">
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 flex items-center gap-3">
+                        Recurrent Failure Signatures
+                        <div className="h-px flex-1 bg-white/5"></div>
+                    </h2>
+                    <div className="glass rounded-3xl overflow-hidden shadow-xl border-rose-500/10">
+                        <div className="grid grid-cols-12 gap-6 px-8 py-4 bg-rose-500/[0.03] border-b border-white/5 text-[10px] font-black text-rose-500/60 uppercase tracking-widest">
+                            <div className="col-span-8">Exception / Assertion Signature</div>
+                            <div className="col-span-2 text-right">Frequency</div>
+                            <div className="col-span-2 text-right">Distribution</div>
+                        </div>
+                        <div className="divide-y divide-white/5">
+                            {run.failures.map((failure, i) => (
+                                <div key={i} className="grid grid-cols-12 gap-6 px-8 py-5 items-center glass-hover">
+                                    <div className="col-span-8 font-mono text-xs text-rose-300 break-all leading-relaxed">
+                                        {failure.message}
+                                    </div>
+                                    <div className="col-span-2 text-right text-sm font-bold text-white tracking-tight">
+                                        {failure.count}
+                                    </div>
+                                    <div className="col-span-2 text-right">
+                                        <span className="text-[10px] font-black text-slate-500 bg-white/5 px-2 py-1 rounded">
+                                            {failure.percentage.toFixed(1)}%
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
+            )}
 
-                {/* Table Body */}
-                {instancesLoading ? (
-                    <div>
-                        {[...Array(10)].map((_, i) => (
-                            <SkeletonRow key={i} />
+            {/* Data Explorer */}
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+                        Instance Explorer
+                    </h2>
+                    {/* Filter Bar */}
+                    <div className="flex gap-1.5 p-1 rounded-xl bg-white/[0.03] border border-white/5">
+                        {(['all', 'passed', 'failed', 'errors'] as FilterType[]).map((f) => (
+                            <button
+                                key={f}
+                                onClick={() => setFilter(f)}
+                                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${filter === f
+                                    ? 'bg-cyan-500 text-black shadow-[0_0_15px_rgba(6,182,212,0.4)]'
+                                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                                    }`}
+                            >
+                                {f}
+                                {run && (
+                                    <span className={`ml-2 opacity-50 ${filter === f ? 'text-black' : ''}`}>
+                                        {f === 'all' ? run.stats.total :
+                                            f === 'passed' ? run.stats.passed :
+                                                f === 'failed' ? run.stats.failed :
+                                                    run.stats.errors}
+                                    </span>
+                                )}
+                            </button>
                         ))}
                     </div>
-                ) : instancesData?.instances?.length === 0 ? (
-                    <div className="p-8 text-center text-[hsl(var(--color-text-secondary))]">
-                        No instances match the current filter.
+                </div>
+
+                {/* Instance Grid */}
+                <div className="glass rounded-3xl overflow-hidden shadow-2xl">
+                    {/* Table Header */}
+                    <div className="grid grid-cols-5 gap-6 px-8 py-4 bg-white/[0.02] border-b border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        <div>Compute ID</div>
+                        <div>Trace ID</div>
+                        <div>Workflow Path</div>
+                        <div>Latency</div>
+                        <div className="text-right">State</div>
                     </div>
-                ) : (
-                    instancesData?.instances?.map((instance) => (
-                        <Link
-                            key={instance.instance_id}
-                            to={`/runs/${runId}/instances/${instance.instance_id}`}
-                            className="grid grid-cols-5 gap-4 px-6 py-4 border-b border-[hsl(var(--color-border))] hover:bg-[hsl(var(--color-bg-elevated))] transition-colors cursor-pointer"
-                        >
-                            <div className="font-mono text-sm text-[hsl(var(--color-text-primary))]">
-                                {instance.instance_id}
-                            </div>
-                            <div className="font-mono text-sm text-[hsl(var(--color-text-secondary))]">
-                                {instance.correlation_id}
-                            </div>
-                            <div className="text-sm text-[hsl(var(--color-text-secondary))]">
-                                {instance.scenario_id}
-                            </div>
-                            <div className="text-sm text-[hsl(var(--color-text-secondary))]">
-                                {instance.duration_ms.toFixed(0)}ms
-                            </div>
+
+                    {/* Table Body */}
+                    <div className="divide-y divide-white/5">
+                        {instancesLoading ? (
                             <div>
-                                <StatusBadge
-                                    status={
-                                        instance.error ? 'error' :
-                                            instance.passed ? 'passed' : 'failed'
-                                    }
-                                    size="sm"
-                                />
+                                {[...Array(10)].map((_, i) => (
+                                    <SkeletonRow key={i} />
+                                ))}
                             </div>
-                        </Link>
-                    ))
-                )}
+                        ) : instancesData?.instances?.length === 0 ? (
+                            <div className="p-20 text-center text-slate-500 text-xs italic font-medium">
+                                No telemetry data matches the selected matrix.
+                            </div>
+                        ) : (
+                            instancesData?.instances?.map((instance) => (
+                                <Link
+                                    key={instance.instance_id}
+                                    to={`/runs/${runId}/instances/${instance.instance_id}`}
+                                    className="grid grid-cols-5 gap-6 px-8 py-5 items-center glass-hover transition-all duration-300 group"
+                                >
+                                    <div className="font-mono text-sm font-bold text-slate-300 group-hover:text-cyan-400 transition-colors">
+                                        {instance.instance_id}
+                                    </div>
+                                    <div className="font-mono text-[10px] text-slate-500">
+                                        {instance.correlation_id}
+                                    </div>
+                                    <div className="text-xs font-semibold text-slate-400 italic">
+                                        {instance.scenario_id}
+                                    </div>
+                                    <div className="font-mono text-xs text-slate-400">
+                                        {instance.duration_ms.toFixed(1)}ms
+                                    </div>
+                                    <div className="flex justify-end">
+                                        <StatusBadge
+                                            status={
+                                                instance.error ? 'error' :
+                                                    instance.passed ? 'passed' : 'failed'
+                                            }
+                                            size="sm"
+                                        />
+                                    </div>
+                                </Link>
+                            ))
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

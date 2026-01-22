@@ -7,16 +7,16 @@ interface EmptyStateProps {
 
 export function EmptyState({ title, description, icon, action }: EmptyStateProps) {
     return (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="flex flex-col items-center justify-center py-24 text-center animate-in fade-in zoom-in-95 duration-700">
             {icon && (
-                <div className="w-16 h-16 rounded-full bg-[hsl(var(--color-bg-secondary))] flex items-center justify-center mb-4 text-[hsl(var(--color-text-secondary))]">
+                <div className="w-20 h-20 rounded-3xl glass border-white/5 flex items-center justify-center mb-6 text-slate-600 shadow-2xl">
                     {icon}
                 </div>
             )}
-            <h3 className="text-lg font-medium text-[hsl(var(--color-text-primary))] mb-2">
+            <h3 className="text-xl font-bold text-white mb-2 tracking-tight group-hover:glow-cyan transition-all">
                 {title}
             </h3>
-            <p className="text-sm text-[hsl(var(--color-text-secondary))] max-w-sm mb-6">
+            <p className="text-xs font-medium text-slate-500 max-w-xs mb-8 uppercase tracking-widest leading-relaxed">
                 {description}
             </p>
             {action}

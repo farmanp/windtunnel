@@ -8,126 +8,148 @@ This document defines ticket dependencies and parallel execution batches for aut
 A → B    : B depends on A (A must complete before B starts)
 A | B    : A and B can run in parallel (no dependency)
 [batch]  : Tickets in same batch can be worked in parallel
+[DONE]   : Batch or ticket is fully implemented
 ```
 
 ## Full Dependency Graph
 
 ```
-                                    INFRA-001
-                                        │
-                    ┌───────────────────┼───────────────────┐
-                    │                   │                   │
-                    ▼                   ▼                   ▼
-               FEAT-001            FEAT-002            FEAT-003
-               (CLI)           (SUT Config)        (Scenario Loader)
-                    │                   │                   │
-                    └───────────────────┴───────────────────┘
-                                        │
-                    ┌───────────────────┼───────────────────┐
-                    │                   │                   │
-                    ▼                   ▼                   ▼
-               FEAT-004            FEAT-005            FEAT-006
-            (HTTP Action)       (Wait Action)       (Assert Action)
-                    │                   │                   │
-                    └───────────────────┴───────────────────┘
-                                        │
-                                        ▼
-                                   FEAT-007
-                              (Context Templating)
-                                        │
-                    ┌───────────────────┼───────────────────┐
-                    │                   │                   │
-                    ▼                   ▼                   ▼
-               FEAT-008            FEAT-009            FEAT-010
-            (Artifact Store)    (HTML Report)         (Replay)
-                    │                   │                   │
-                    └───────────────────┴───────────────────┘
-                                        │
-                    ┌───────────────────┼───────────────────┐
-                    │                   │                   │
-                    ▼                   ▼                   ▼
-               FEAT-011            FEAT-012        FEAT-013 | FEAT-014
-           (Parallel Exec)      (Turbulence)     (Schema)  | (Expressions)
-                    │                   │                   │
-                    └───────────────────┴───────────────────┘
-                                        │
-                                ┌───────┼───────┐
-                                │       │       │
-                                ▼       ▼       ▼
-                           FEAT-015  FEAT-016  FEAT-017
-                          (Reports)  (CI Gate) (Variation)
-                                │       │       │
-                                └───────┴───────┘
-                                        │
-                          ┌─────────────┼─────────────┐
-                          │             │             │
-                          ▼             ▼             ▼
-                     FEAT-018      FEAT-019      SPIKE-001
-                     (SQLite)    (Branching)    (LLM Research)
+                                    INFRA-001 [DONE]
+                                         │
+                    ┌────────────────────┼────────────────────┐
+                    │                    │                    │
+                    ▼                    ▼                    ▼
+               FEAT-001 [DONE]      FEAT-002 [DONE]      FEAT-003 [DONE]
+               (CLI)            (SUT Config)         (Scenario Loader)
+                    │                    │                    │
+                    └────────────────────┴────────────────────┘
+                                         │
+                    ┌────────────────────┼────────────────────┐
+                    │                    │                    │
+                    ▼                    ▼                    ▼
+               FEAT-004 [DONE]      FEAT-005 [DONE]      FEAT-006 [DONE]
+            (HTTP Action)        (Wait Action)        (Assert Action)
+                    │                    │                    │
+                    └────────────────────┴────────────────────┘
+                                         │
+                                         ▼
+                                    FEAT-007 [DONE]
+                               (Context Templating)
+                    ┌────────────────────┼────────────────────┐
+                    │                    │                    │
+                    ▼                    ▼                    ▼
+               FEAT-008 [DONE]      FEAT-009 [DONE]      FEAT-010 [DONE]
+            (Artifact Store)     (HTML Report)          (Replay)
+                    │                    │                    │
+                    └───────┬────────────┴───────┬────────────┘
+                            │                    │
+                    ┌───────┴────────────┬───────┴────────────┐
+                    │                    │                    │
+                    ▼                    ▼                    ▼
+               FEAT-011 [DONE]      FEAT-012 [DONE]  FEAT-013 [DONE] | FEAT-014 [DONE]
+            (Parallel Exec)       (Turbulence)     (Schema)      | (Expressions)
+                    │                    │                    │
+                    └───────┬────────────┴───────┬────────────┘
+                            │                    │
+                    ┌───────┴────────────┬───────┴────────────┐
+                    │                    │                    │
+                    ▼                    ▼                    ▼
+               FEAT-015             FEAT-016             FEAT-017
+              (Reports)            (CI Gate)           (Variation)
+                    │                    │                    │
+                    └───────┬────────────┴───────┬────────────┘
+                            │                    │
+            ┌───────────────┴──────────┬─────────┴───────────────┐
+            │                          │                         │
+            ▼                          ▼                         ▼
+       FEAT-018                   FEAT-019                   SPIKE-001
+       (SQLite)                  (Branching)               (LLM Actor)
+            │                          │                         │
+            └──────────────────────────┼─────────────────────────┘
+                                       │
+                                       ▼
+                                   FEAT-020 [DONE]
+                                 (Web Analytics Suite)
+                                       │
+                    ┌──────────────────┼──────────────────┐
+                    │                  │                  │
+                    ▼                  ▼                  ▼
+               FEAT-021 [DONE]    FEAT-022 [DONE]    FEAT-023 [DONE]
+              (FastAPI)           (Run List)         (Run Detail)
+                    │                  │                  │
+                    └──────────────────┼──────────────────┘
+                                       │
+                                       ▼
+                                   FEAT-024 [DONE]
+                                (Instance Timeline)
+                                       │
+                                       ▼
+                                   FEAT-025
+                                (Real-time WS)
 ```
 
 ## Parallel Execution Batches
 
 Execute each batch to completion before starting the next. Within a batch, all tickets can be worked in parallel.
 
-### Batch 0: Foundation
-| Ticket | Title | Dependencies | Estimated Complexity |
-|--------|-------|--------------|---------------------|
-| INFRA-001 | Project setup and Python package scaffolding | None | Medium |
+### Batch 0: Foundation [DONE]
+| Ticket | Title | Dependencies | Estimated Complexity | Status |
+|--------|-------|--------------|---------------------|--------|
+| INFRA-001 | Project setup and Python package scaffolding | None | Medium | DONE |
 
 **Batch Notes:** Must complete before any other work. Sets up the development environment.
 
 ---
 
-### Batch 1: CLI & Configuration (Parallel)
-| Ticket | Title | Dependencies | Estimated Complexity |
-|--------|-------|--------------|---------------------|
-| FEAT-001 | CLI scaffold with run, report, replay commands | INFRA-001 | Medium |
-| FEAT-002 | SUT config loader | INFRA-001 | Low |
-| FEAT-003 | Scenario loader and YAML parser | INFRA-001 | Medium |
+### Batch 1: CLI & Configuration [DONE]
+| Ticket | Title | Dependencies | Estimated Complexity | Status |
+|--------|-------|--------------|---------------------|--------|
+| FEAT-001 | CLI scaffold with run, report, replay commands | INFRA-001 | Medium | DONE |
+| FEAT-002 | SUT config loader | INFRA-001 | Low | DONE |
+| FEAT-003 | Scenario loader and YAML parser | INFRA-001 | Medium | DONE |
 
 **Batch Notes:** All three tickets only depend on INFRA-001. Can be developed and tested independently.
 
 ---
 
-### Batch 2: Action Runners (Parallel)
-| Ticket | Title | Dependencies | Estimated Complexity |
-|--------|-------|--------------|---------------------|
-| FEAT-004 | HTTP action runner with extraction | FEAT-002, FEAT-003 | Medium |
-| FEAT-005 | Wait action runner with polling | FEAT-002, FEAT-003 | Medium |
-| FEAT-006 | Assert action with basic expectations | FEAT-002, FEAT-003 | Low |
+### Batch 2: Action Runners [DONE]
+| Ticket | Title | Dependencies | Estimated Complexity | Status |
+|--------|-------|--------------|---------------------|--------|
+| FEAT-004 | HTTP action runner with extraction | FEAT-002, FEAT-003 | Medium | DONE |
+| FEAT-005 | Wait action runner with polling | FEAT-002, FEAT-003 | Medium | DONE |
+| FEAT-006 | Assert action with basic expectations | FEAT-002, FEAT-003 | Low | DONE |
 
 **Batch Notes:** Action runners share the same interface. Can be developed in parallel with mock configs.
 
 ---
 
-### Batch 3: Context Engine
-| Ticket | Title | Dependencies | Estimated Complexity |
-|--------|-------|--------------|---------------------|
-| FEAT-007 | Context templating engine | FEAT-004, FEAT-005, FEAT-006 | Medium |
+### Batch 3: Context Engine [DONE]
+| Ticket | Title | Dependencies | Estimated Complexity | Status |
+|--------|-------|--------------|---------------------|--------|
+| FEAT-007 | Context templating engine | FEAT-004, FEAT-005, FEAT-006 | Medium | DONE |
 
 **Batch Notes:** Sequential - requires action runners to integrate with. This is the glue that connects entry data → actions → extractions.
 
 ---
 
-### Batch 4: Persistence & Output (Parallel)
-| Ticket | Title | Dependencies | Estimated Complexity |
-|--------|-------|--------------|---------------------|
-| FEAT-008 | JSONL artifact storage and run persistence | FEAT-007 | Medium |
-| FEAT-009 | Basic HTML report generation | FEAT-007 | Medium |
-| FEAT-010 | Replay command implementation | FEAT-007, FEAT-001 | Medium |
+### Batch 4: Persistence & Output [DONE]
+| Ticket | Title | Dependencies | Estimated Complexity | Status |
+|--------|-------|--------------|---------------------|--------|
+| FEAT-008 | JSONL artifact storage and run persistence | FEAT-007 | Medium | DONE |
+| FEAT-009 | Basic HTML report generation | FEAT-007 | Medium | DONE |
+| FEAT-010 | Replay command implementation | FEAT-007, FEAT-001 | Medium | DONE |
 
 **Batch Notes:** All depend on context engine but don't depend on each other. FEAT-010 also needs CLI from FEAT-001.
 
 ---
 
-### Batch 5: Scale & Resilience (Parallel)
-| Ticket | Title | Dependencies | Estimated Complexity |
-|--------|-------|--------------|---------------------|
-| FEAT-011 | Parallel execution engine | FEAT-008 | High |
-| FEAT-012 | Turbulence engine v0 | FEAT-004 | Medium |
-| FEAT-013 | Schema validation expectation | FEAT-006 | Low |
-| FEAT-014 | Custom expression evaluator | FEAT-006 | High |
+### Batch 5: Scale & Resilience [DONE]
+| Ticket | Title | Dependencies | Estimated Complexity | Status |
+|--------|-------|--------------|---------------------|--------|
+| FEAT-011 | Parallel execution engine | FEAT-008 | High | DONE |
+| FEAT-012 | Turbulence engine v0 | FEAT-004 | Medium | DONE |
+| FEAT-013 | Schema validation expectation | FEAT-006 | Low | DONE |
+| FEAT-014 | Custom expression evaluator | FEAT-006 | High | DONE |
 
 **Batch Notes:**
 - FEAT-011 needs artifact storage for concurrent writes
@@ -136,12 +158,12 @@ Execute each batch to completion before starting the next. Within a batch, all t
 
 ---
 
-### Batch 6: Polish & CI (Parallel)
-| Ticket | Title | Dependencies | Estimated Complexity |
-|--------|-------|--------------|---------------------|
-| FEAT-015 | Enhanced report aggregations | FEAT-009, FEAT-011 | Medium |
-| FEAT-016 | CI gating with fail-on thresholds | FEAT-011 | Low |
-| FEAT-017 | Deterministic variation engine | FEAT-007 | Medium |
+### Batch 6: Polish & CI
+| Ticket | Title | Dependencies | Estimated Complexity | Status |
+|--------|-------|--------------|---------------------|--------|
+| FEAT-015 | Enhanced report aggregations | FEAT-009, FEAT-011 | Medium | TODO |
+| FEAT-016 | CI gating with fail-on thresholds | FEAT-011 | Low | TODO |
+| FEAT-017 | Deterministic variation engine | FEAT-007 | Medium | TODO |
 
 **Batch Notes:**
 - FEAT-015 needs basic reports + parallel execution data
@@ -150,14 +172,29 @@ Execute each batch to completion before starting the next. Within a batch, all t
 
 ---
 
-### Batch 7: Future Enhancements (Parallel, Optional)
-| Ticket | Title | Dependencies | Estimated Complexity |
-|--------|-------|--------------|---------------------|
-| FEAT-018 | SQLite backend for run storage | FEAT-008 | Medium |
-| FEAT-019 | Branching flows and actor policies | FEAT-007, FEAT-006 | High |
-| SPIKE-001 | LLM-driven actor policy research | FEAT-017, FEAT-019 | Research |
+### Batch 7: Advanced Engine
+| Ticket | Title | Dependencies | Estimated Complexity | Status |
+|--------|-------|--------------|---------------------|--------|
+| FEAT-018 | SQLite backend for run storage | FEAT-008 | Medium | TODO |
+| FEAT-019 | Branching flows and actor policies | FEAT-007, FEAT-006 | High | TODO |
+| SPIKE-001 | LLM-driven actor policy research | FEAT-017, FEAT-019 | Research | TODO |
+| SPIKE-002 | Python DSL for scenarios | FEAT-003 | Medium | TODO |
 
-**Batch Notes:** These are optional enhancements. Can be deferred or worked based on priority.
+**Batch Notes:** These are optional enhancements. Can be deferred or worked based on priority. SPIKE-002 added as a potential future scenario definition method.
+
+---
+
+### Batch 8: Web Intelligence Suite [PARTIALLY DONE]
+| Ticket | Title | Dependencies | Estimated Complexity | Status |
+|--------|-------|--------------|---------------------|--------|
+| FEAT-020 | Web UI Foundation (Vite/React/Tailwind) | FEAT-021 | Medium | DONE |
+| FEAT-021 | FastAPI Backend for Artifacts | FEAT-008 | Medium | DONE |
+| FEAT-022 | Executive Dashboard (Run List) | FEAT-021 | Medium | DONE |
+| FEAT-023 | Deep Investigation View (Run Detail) | FEAT-021 | High | DONE |
+| FEAT-024 | Simulation Trace Timeline | FEAT-023 | High | DONE |
+| FEAT-025 | Real-time WebSocket Streaming | FEAT-021, FEAT-024 | High | TODO |
+
+**Batch Notes:** This batch focuses on providing a web-based interface for Windtunnel. FEAT-021 provides the API layer, FEAT-020 sets up the frontend framework, and subsequent tickets build out specific UI components. FEAT-025 is the final piece for real-time updates.
 
 ---
 
@@ -168,12 +205,12 @@ Execute each batch to completion before starting the next. Within a batch, all t
 | INFRA-001 | - | FEAT-001, FEAT-002, FEAT-003 |
 | FEAT-001 | INFRA-001 | FEAT-010 |
 | FEAT-002 | INFRA-001 | FEAT-004, FEAT-005, FEAT-006 |
-| FEAT-003 | INFRA-001 | FEAT-004, FEAT-005, FEAT-006 |
+| FEAT-003 | INFRA-001 | FEAT-004, FEAT-005, FEAT-006, SPIKE-002 |
 | FEAT-004 | FEAT-002, FEAT-003 | FEAT-007, FEAT-012 |
 | FEAT-005 | FEAT-002, FEAT-003 | FEAT-007 |
 | FEAT-006 | FEAT-002, FEAT-003 | FEAT-007, FEAT-013, FEAT-014, FEAT-019 |
 | FEAT-007 | FEAT-004, FEAT-005, FEAT-006 | FEAT-008, FEAT-009, FEAT-010, FEAT-017, FEAT-019 |
-| FEAT-008 | FEAT-007 | FEAT-011, FEAT-018 |
+| FEAT-008 | FEAT-007 | FEAT-011, FEAT-018, FEAT-021 |
 | FEAT-009 | FEAT-007 | FEAT-015 |
 | FEAT-010 | FEAT-007, FEAT-001 | - |
 | FEAT-011 | FEAT-008 | FEAT-015, FEAT-016 |
@@ -183,13 +220,20 @@ Execute each batch to completion before starting the next. Within a batch, all t
 | FEAT-015 | FEAT-009, FEAT-011 | - |
 | FEAT-016 | FEAT-011 | - |
 | FEAT-017 | FEAT-007 | SPIKE-001 |
-| FEAT-018 | FEAT-008 | - |
-| FEAT-019 | FEAT-007, FEAT-006 | SPIKE-001 |
-| SPIKE-001 | FEAT-017, FEAT-019 | - |
+| FEAT-018 | FEAT-008 | FEAT-020 |
+| FEAT-019 | FEAT-007, FEAT-006 | SPIKE-001, FEAT-020 |
+| SPIKE-001 | FEAT-017, FEAT-019 | FEAT-020 |
+| SPIKE-002 | FEAT-003 | - |
+| FEAT-020 | FEAT-018, FEAT-019, SPIKE-001 | FEAT-021 |
+| FEAT-021 | FEAT-008, FEAT-020 | FEAT-022, FEAT-023, FEAT-025 |
+| FEAT-022 | FEAT-021 | - |
+| FEAT-023 | FEAT-021 | FEAT-024 |
+| FEAT-024 | FEAT-023 | FEAT-025 |
+| FEAT-025 | FEAT-021, FEAT-024 | - |
 
 ## Critical Path
 
-The longest dependency chain determines minimum implementation time:
+The longest dependency chain remains:
 
 ```
 INFRA-001 → FEAT-002 → FEAT-004 → FEAT-007 → FEAT-008 → FEAT-011 → FEAT-015
@@ -223,3 +267,8 @@ INFRA-001 → FEAT-002 → FEAT-004 → FEAT-007 → FEAT-008 → FEAT-011 → F
 - If blocked on a dependency not in the ticket graph, document and ask for clarification
 - If a ticket's scope needs adjustment, note the reason and propose changes
 - If tests fail due to dependency issues, check the dependent ticket first
+
+## AI Agent Status
+
+Windtunnel core is stable. Focus shifted to Web UI visibility.
+**Current Frontier:** Real-time feedback loop (FEAT-025) and Advanced Engine features (Batch 7).

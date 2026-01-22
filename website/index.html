@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windtunnel // Stress Intelligence for Modern Workflows</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        obsidian: {
+                            950: '#05070a',
+                            900: '#0a0f18',
+                            800: '#0f172a',
+                        },
+                        accent: {
+                            cyan: '#06b6d4',
+                            indigo: '#6366f1',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #05070a;
+            color: #cbd5e1;
+            overflow-x: hidden;
+        }
+
+        .glow-cyan {
+            text-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #06b6d4, #6366f1);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .grid-bg {
+            background-image: radial-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .turbulence-glitch:hover {
+            animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+        }
+
+        @keyframes glitch {
+            0% {
+                transform: translate(0)
+            }
+
+            20% {
+                transform: translate(-2px, 2px)
+            }
+
+            40% {
+                transform: translate(-2px, -2px)
+            }
+
+            60% {
+                transform: translate(2px, 2px)
+            }
+
+            80% {
+                transform: translate(2px, -2px)
+            }
+
+            100% {
+                transform: translate(0)
+            }
+        }
+
+        .hero-glow {
+            position: absolute;
+            top: -10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 60%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            filter: blur(120px);
+            z-index: -1;
+        }
+    </style>
+</head>
+
+<body class="antialiased font-sans selection:bg-cyan-500/30">
+
+    <div class="grid-bg fixed inset-0 z-[-2]"></div>
+    <div class="hero-glow"></div>
+
+    <!-- Navbar -->
+    <nav class="container mx-auto px-8 py-8 flex justify-between items-center relative z-10">
+        <div class="flex items-center gap-4 group">
+            <div
+                class="w-10 h-10 rounded-xl bg-obsidian-900 border border-white/10 flex items-center justify-center relative">
+                <div class="absolute inset-0 bg-cyan-500/20 blur opacity-0 group-hover:opacity-100 transition-opacity">
+                </div>
+                <svg class="w-6 h-6 text-cyan-400 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </div>
+            <div>
+                <span class="text-xl font-black uppercase tracking-tighter text-white glow-cyan">Windtunnel</span>
+                <p class="text-[8px] font-black uppercase tracking-[0.3em] text-slate-500 -mt-1">Stress Intelligence</p>
+            </div>
+        </div>
+        <div
+            class="hidden md:flex items-center gap-10 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+            <a href="#features" class="hover:text-cyan-400 transition-colors">Framework</a>
+            <a href="#how-it-works" class="hover:text-cyan-400 transition-colors">Simulation</a>
+            <a href="https://github.com/your-org/windtunnel" class="hover:text-cyan-400 transition-colors">Artifacts</a>
+            <a href="#landing"
+                class="px-6 py-2.5 rounded-full glass border-white/10 text-white hover:border-cyan-500/30 transition-all">
+                Access Engine
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="container mx-auto px-8 pt-24 pb-40 text-center relative">
+        <div
+            class="inline-flex items-center gap-3 px-4 py-2 rounded-full glass border-white/5 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-500/80 mb-12 animate-in fade-in slide-in-from-top-4 duration-1000">
+            <span class="flex h-1.5 w-1.5 rounded-full bg-cyan-500 shadow-[0_0_10px_#06b6d4]"></span>
+            System Ready: v1.0.0 Stable Node available
+        </div>
+
+        <h1 class="text-4xl md:text-6xl font-bold tracking-tighter mb-8 max-w-4xl mx-auto leading-[1.1] text-white">
+            Stress test your <br />
+            <span class="gradient-text">workflow integrity.</span>
+        </h1>
+
+        <p class="text-lg md:text-xl text-slate-400 mb-14 max-w-2xl mx-auto font-normal leading-relaxed">
+            Stop testing endpoints. Start simulating humans. <br />
+            <span class="text-sm font-bold uppercase tracking-[0.2em] text-slate-600 block mt-4">— Windtunnel Simulation
+                Protocol</span>
+        </p>
+
+        <div class="flex flex-col md:flex-row justify-center items-center gap-6">
+            <a href="#get-started"
+                class="px-10 py-5 bg-white text-obsidian-950 font-bold uppercase tracking-widest rounded-2xl hover:bg-cyan-400 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-cyan-500/30 text-xs">
+                Deploy Framework
+            </a>
+            <div class="flex items-center px-8 py-5 glass border-white/5 rounded-2xl font-mono text-sm group">
+                <span class="text-slate-600 mr-3">$</span>
+                <span class="text-slate-300">pip install <span
+                        class="text-white font-bold group-hover:text-cyan-400">windtunnel</span></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Premium Dashboard Preview -->
+    <section class="container mx-auto px-8 -mt-20 mb-40">
+        <div class="relative group">
+            <div
+                class="absolute -inset-1 bg-gradient-to-r from-cyan-600 to-indigo-600 rounded-[3rem] blur opacity-20 group-hover:opacity-40 transition duration-1000">
+            </div>
+            <div class="relative glass rounded-[2.5rem] border-white/10 overflow-hidden shadow-2xl">
+                <div class="flex items-center justify-between px-8 py-5 border-b border-white/5 bg-white/[0.02]">
+                    <div class="flex gap-2">
+                        <div class="w-3 h-3 rounded-full bg-rose-500/20 border border-rose-500/50"></div>
+                        <div class="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/50"></div>
+                        <div class="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/50"></div>
+                    </div>
+                    <div class="text-[10px] font-black uppercase tracking-[.3em] text-slate-500">
+                        Simulation_Trace // Live_Telemetry
+                    </div>
+                    <div class="w-12"></div>
+                </div>
+                <!-- CSS-based Dashboard Illustration -->
+                <div class="p-12 bg-obsidian-950 grid grid-cols-12 gap-8">
+                    <div class="col-span-8 space-y-6">
+                        <div
+                            class="h-40 glass rounded-2xl border-white/5 p-6 flex flex-col justify-end overflow-hidden">
+                            <div class="flex items-end gap-1 h-full">
+                                <div class="w-full bg-cyan-500/20 h-[30%] rounded-t-sm"></div>
+                                <div class="w-full bg-cyan-500/20 h-[45%] rounded-t-sm"></div>
+                                <div class="w-full bg-cyan-500/20 h-[25%] rounded-t-sm"></div>
+                                <div
+                                    class="w-full bg-cyan-400 h-[80%] rounded-t-sm shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                                </div>
+                                <div class="w-full bg-cyan-500/20 h-[60%] rounded-t-sm"></div>
+                                <div class="w-full bg-cyan-500/20 h-[55%] rounded-t-sm"></div>
+                                <div class="w-full bg-cyan-500/20 h-[70%] rounded-t-sm"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-4 pt-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-1 bg-cyan-500 rounded-full"></div>
+                                <div class="flex-1 h-1 bg-white/5 rounded-full"></div>
+                            </div>
+                            <div class="flex items-center gap-4 opacity-50">
+                                <div class="w-10 h-1 bg-indigo-500 rounded-full"></div>
+                                <div class="flex-1 h-1 bg-white/5 rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-span-4 space-y-4">
+                        <div class="p-6 glass rounded-2xl border-white/5">
+                            <div class="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Success
+                                Delta</div>
+                            <div class="text-2xl font-black text-white glow-cyan">99.8%</div>
+                        </div>
+                        <div class="p-6 glass rounded-2xl border-white/5">
+                            <div class="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Virtual
+                                Agents</div>
+                            <div class="text-2xl font-black text-white">4,096</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="container mx-auto px-8 py-40">
+        <div class="grid md:grid-cols-2 gap-24 items-center">
+            <div class="space-y-12">
+                <div class="space-y-4">
+                    <h2 class="text-[10px] font-bold uppercase tracking-[0.4em] text-cyan-500/70">Execution Framework
+                    </h2>
+                    <h3 class="text-4xl font-bold text-white tracking-tight leading-tight">Scenarios as
+                        <br />First-Class Code.
+                    </h3>
+                </div>
+                <p class="text-slate-400 text-lg font-normal leading-relaxed">
+                    Reject fragile scripts. Windtunnel treats user journeys as declarative artifacts, allowing you to
+                    version-control your simulation logic alongside your application code.
+                </p>
+                <div class="space-y-8">
+                    <div class="flex gap-6 group">
+                        <div
+                            class="w-12 h-12 flex-shrink-0 rounded-2xl glass border-white/5 flex items-center justify-center text-cyan-400 group-hover:border-cyan-500/50 transition-all">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a2 2 0 00-1.96 1.414l-.718 2.154a2 2 0 001.103 2.456l.005.003 a10 10 0 1111.458-11.457l-.004-.005a2 2 0 00-2.456-1.103l-2.154.718a2 2 0 00-1.414 1.96l.477 2.387a2 2 0 00.547 1.022z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white uppercase tracking-widest text-[10px] mb-2">High-Frequency
+                                Turbulence</h4>
+                            <p class="text-sm text-slate-500 leading-relaxed">Inject network instability, latency
+                                spikes, and host dropouts mid-simulation to verify system resilience.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-6 group">
+                        <div
+                            class="w-12 h-12 flex-shrink-0 rounded-2xl glass border-white/5 flex items-center justify-center text-indigo-400 group-hover:border-indigo-500/50 transition-all">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white uppercase tracking-widest text-xs mb-2">Stateful Agent
+                                Persistence</h4>
+                            <p class="text-sm text-slate-500 leading-relaxed">Virtual agents maintain state across
+                                steps, extracting variables from telemetry and carrying them through the simulation
+                                graph.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code Window -->
+            <div class="glass rounded-[2rem] border-white/10 overflow-hidden shadow-2xl relative">
+                <div class="absolute inset-0 bg-indigo-500/5 blur-3xl rounded-full translate-x-1/2 translate-y-1/2">
+                </div>
+                <div class="flex items-center px-8 py-5 border-b border-white/5 bg-white/[0.02]">
+                    <div class="flex gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-white/10"></div>
+                        <div class="w-2.5 h-2.5 rounded-full bg-white/10"></div>
+                        <div class="w-2.5 h-2.5 rounded-full bg-white/10"></div>
+                    </div>
+                    <span
+                        class="ml-6 text-[10px] text-slate-500 font-mono tracking-widest">checkout_protocol.yaml</span>
+                </div>
+                <div class="p-10 font-mono text-sm leading-relaxed overflow-x-auto relative z-10">
+                    <pre class="selection:bg-cyan-500/30">
+<span class="text-cyan-500">id:</span> <span class="text-slate-200">"agent_path_01"</span>
+<span class="text-cyan-500">flow:</span>
+  <span class="text-slate-600"># Start Trace</span>
+  <span class="text-indigo-400">- type:</span> <span class="text-slate-300">http</span>
+    <span class="text-cyan-500">name:</span> <span class="text-slate-200">auth_gate</span>
+    <span class="text-cyan-500">extract:</span>
+      <span class="text-white">sid:</span> <span class="text-indigo-300">"$.session_token"</span>
+
+  <span class="text-slate-600"># Dynamic Latency</span>
+  <span class="text-indigo-400">- type:</span> <span class="text-slate-300">wait</span>
+    <span class="text-cyan-500">seconds:</span> <span class="text-slate-200">2</span>
+
+  <span class="text-slate-600"># Action Injection</span>
+  <span class="text-indigo-400">- type:</span> <span class="text-slate-300">http</span>
+    <span class="text-cyan-500">path:</span> <span class="text-slate-200">/secure/endpoint</span>
+    <span class="text-cyan-500">headers:</span>
+      <span class="text-white">Authorization:</span> <span class="text-emerald-400">"Bearer {{ sid }}"</span>
+</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chaos/Turbulence Section -->
+    <section class="container mx-auto px-8 py-40 border-t border-white/5">
+        <div class="max-w-4xl mx-auto text-center space-y-8">
+            <h2
+                class="text-4xl md:text-5xl font-bold text-white tracking-tight leading-none turbulence-glitch cursor-default">
+                Inject <span class="text-rose-500 glow-fail">Turbulence.</span>
+            </h2>
+            <p class="text-slate-500 text-lg font-normal max-w-2xl mx-auto italic">
+                Real distributed systems are chaotic. Your tests should be too. Windtunnel allows mid-flight turbulence
+                injection to simulate unpredictable behavior.
+            </p>
+            <div class="grid grid-cols-3 gap-6 pt-12">
+                <div
+                    class="p-8 pb-12 glass border-white/5 rounded-[2rem] text-left group hover:border-rose-500/20 transition-all">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center mb-6 text-rose-500 group-hover:glow-fail">
+                        ⚡</div>
+                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">IO_LATENCY</div>
+                    <p class="text-xs font-semibold text-slate-400 leading-relaxed">Simulate network jitter and
+                        slow-path execution.</p>
+                </div>
+                <div
+                    class="p-8 pb-12 glass border-white/5 rounded-[2rem] text-left group hover:border-rose-500/20 transition-all">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center mb-6 text-rose-500 group-hover:glow-fail">
+                        ✕</div>
+                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">SIGNAL_LOSS</div>
+                    <p class="text-xs font-semibold text-slate-400 leading-relaxed">Inject packet drops and connection
+                        resets.</p>
+                </div>
+                <div
+                    class="p-8 pb-12 glass border-white/5 rounded-[2rem] text-left group hover:border-rose-500/20 transition-all">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center mb-6 text-rose-500 group-hover:glow-fail">
+                        !</div>
+                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">NODE_FAULT</div>
+                    <p class="text-xs font-semibold text-slate-400 leading-relaxed">Simulate internal server crashes and
+                        timeouts.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/5 py-24 mt-20 relative overflow-hidden">
+        <div
+            class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-500/5 blur-[120px] rounded-full">
+        </div>
+        <div class="container mx-auto px-8 relative z-10">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-12">
+                <div class="space-y-4 text-center md:text-left">
+                    <div class="flex items-center gap-3 justify-center md:justify-start">
+                        <div
+                            class="w-8 h-8 rounded-lg bg-obsidian-900 border border-white/10 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <span
+                            class="text-lg font-black text-white uppercase tracking-tighter glow-cyan">Windtunnel</span>
+                    </div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.4em] max-w-xs leading-loose">
+                        Architected for precision. <br />Engineered for chaos.
+                    </p>
+                </div>
+                <div class="flex gap-12 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+                    <a href="#" class="hover:text-cyan-400 transition-colors">Documentation</a>
+                    <a href="#" class="hover:text-cyan-400 transition-colors">GitHub</a>
+                    <a href="#" class="hover:text-cyan-400 transition-colors">MIT_License</a>
+                </div>
+            </div>
+            <div class="mt-24 pt-8 border-t border-white/5 text-center">
+                <p class="text-[9px] font-black text-slate-600 uppercase tracking-[0.5em]">
+                    &copy; 2026 Windtunnel Contributors // STRESS_INTELLIGENCE_PROTOCOL
+                </p>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>
