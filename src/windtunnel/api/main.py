@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from windtunnel.api.routes.runs import router as runs_router
+from windtunnel.api.routes.stream import router as stream_router
 
 
 def create_app(runs_dir: Path = Path("runs"), static_dir: Path | None = None) -> FastAPI:
@@ -39,6 +40,7 @@ def create_app(runs_dir: Path = Path("runs"), static_dir: Path | None = None) ->
 
     # Include API routes
     app.include_router(runs_router, prefix="/api")
+    app.include_router(stream_router, prefix="/api")
 
     # Serve static files if provided (production mode)
     if static_dir and static_dir.exists():

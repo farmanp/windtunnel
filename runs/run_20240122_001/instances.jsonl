@@ -1,0 +1,4 @@
+{"instance_id": "inst_001", "correlation_id": "corr_abc_123", "scenario_id": "complete-checkout", "passed": true, "duration_ms": 1250.5, "error": null}
+{"instance_id": "inst_002", "correlation_id": "corr_def_456", "scenario_id": "complete-checkout", "passed": false, "duration_ms": 2100.2, "error": "AssertionError: Expected 200, got 503 Service Unavailable"}
+{"instance_id": "inst_003", "correlation_id": "corr_ghi_789", "scenario_id": "abandon-cart", "passed": false, "duration_ms": 4500.0, "error": "httpx.ConnectTimeout: Connection to checkout-service timed out"}
+{"instance_id": "inst_004", "correlation_id": "corr_jkl_012", "scenario_id": "complete-checkout", "passed": false, "duration_ms": 2050.1, "error": "AssertionError: Expected 200, got 503 Service Unavailable"}

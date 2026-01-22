@@ -1,0 +1,3 @@
+{"instance_id": "inst_002", "action_name": "get_checkout_page", "action_type": "http", "observation": {"ok": true, "status_code": 200, "latency_ms": 150.5, "headers": {}, "body": {"id": "cart_123"}, "errors": []}}
+{"instance_id": "inst_002", "action_name": "submit_payment", "action_type": "http", "observation": {"ok": false, "status_code": 503, "latency_ms": 1850.2, "headers": {}, "body": {"error": "Overloaded"}, "errors": ["AssertionError: Expected 200, got 503 Service Unavailable"]}}
+{"instance_id": "inst_003", "action_name": "get_cart", "action_type": "http", "observation": {"ok": false, "status_code": null, "latency_ms": 4500.0, "headers": {}, "body": null, "errors": ["httpx.ConnectTimeout: Connection to checkout-service timed out"]}}

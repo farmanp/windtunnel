@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { MetricCard } from '@/components/MetricCard';
 import { SkeletonRow, SkeletonCard } from '@/components/Skeleton';
+import { useRunStream } from '@/hooks/useRunStream';
 
 type FilterType = 'all' | 'passed' | 'failed' | 'errors';
 
@@ -42,6 +43,9 @@ interface RunDetail {
 export function RunDetailPage() {
     const { runId } = useParams<{ runId: string }>();
     const [filter, setFilter] = useState<FilterType>('all');
+
+    // Real-time streaming
+    const { status: streamStatus, reconnect } = useRunStream(runId || '');
 
     const { data: run, isLoading: runLoading } = useQuery<RunDetail>({
         queryKey: ['runs', runId],
@@ -82,11 +86,24 @@ export function RunDetailPage() {
                     <h1 className="text-4xl font-bold tracking-tight text-white glow-cyan">
                         {runId}
                     </h1>
-                    {run && (
-                        <div className="px-3 py-1 rounded-md glass border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-widest">
-                            Live Artifact
-                        </div>
-                    )}
+                    {/* Connection Status Indicator */}
+                    <button
+                        onClick={streamStatus === 'disconnected' ? reconnect : undefined}
+                        className={`px-3 py-1 rounded-md glass text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${streamStatus === 'connected'
+                            ? 'border-emerald-500/20 text-emerald-400'
+                            : streamStatus === 'connecting'
+                                ? 'border-amber-500/20 text-amber-400'
+                                : 'border-rose-500/20 text-rose-400 hover:border-rose-500/40 cursor-pointer'
+                            }`}
+                    >
+                        <span className={`w-1.5 h-1.5 rounded-full ${streamStatus === 'connected'
+                            ? 'bg-emerald-500 shadow-[0_0_6px_#10b981]'
+                            : streamStatus === 'connecting'
+                                ? 'bg-amber-500 animate-pulse'
+                                : 'bg-rose-500'
+                            }`} />
+                        {streamStatus === 'connected' ? 'Live Stream' : streamStatus === 'connecting' ? 'Connecting...' : 'Reconnect'}
+                    </button>
                 </div>
                 {run && (
                     <p className="text-sm font-medium text-slate-400">
